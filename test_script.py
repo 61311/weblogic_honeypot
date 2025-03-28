@@ -1,3 +1,4 @@
+import requests
 
 # --- Test T3 handshake (port 7001) ---
 def test_t3_handshake(host='129.146.76.211', port=7001):
@@ -6,8 +7,8 @@ def test_t3_handshake(host='129.146.76.211', port=7001):
             sock.connect((host, port))
             handshake = b"t3 12.2.1\nAS:2048\nHL:19\n\n"
             sock.sendall(handshake)
-    response = sock.recv(1024)
-        print("[T3] Response:", response.decode(errors='ignore').strip())
+            response = sock.recv(1024)
+            print("[T3] Response:", response.decode(errors='ignore').strip())
     except Exception as e:
         print("[T3] FAILED:", e)
 
@@ -16,7 +17,7 @@ def test_http_ports(host='129.146.76.211'):
     ports = [8000, 8001, 14100, 14000]
     for port in ports:
         try:
-        resp = requests.get(f"http://{host}:{port}/")
+            resp = requests.get(f"http://{host}:{port}/")
             print(f"[HTTP {port}] OK:", resp.status_code)
         except Exception as e:
             print(f"[HTTP {port}] FAILED:", e)
