@@ -327,17 +327,17 @@ def catch_all(path):
                 random_delay()
                 return response
     return Response("Not found", status=404)
-@login_required("/", methods=["GET", "POST"])
-def login():
-    random_delay()  
-    if request.method == "POST":
-        ip = request.remote_addr
-        details = {
-            "username": request.form.get("j_username"),
-            "password": request.form.get("j_password")
-        }
-        log_event("login_attempt", ip, details)
-    return render_template_string(login_page)
+# @login_required("/", methods=["GET", "POST"])
+# def login():
+#     random_delay()  
+#     if request.method == "POST":
+#         ip = request.remote_addr
+#         details = {
+#             "username": request.form.get("j_username"),
+#             "password": request.form.get("j_password")
+#         }
+#         log_event("login_attempt", ip, details)
+#     return render_template_string(login_page)
 
 
 # Run Flask apps
