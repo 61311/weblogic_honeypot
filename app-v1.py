@@ -327,7 +327,7 @@ def catch_all(path):
                 random_delay()
                 return response
     return Response("Not found", status=404)
-@login_required
+@login_required("/", methods=["GET", "POST"])
 def login():
     random_delay()  
     if request.method == "POST":
