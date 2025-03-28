@@ -227,7 +227,7 @@ app_443 = Flask("weblogic_443")
 
 # Routes
 
-@app_8000.route("/", methods=["GET", "POST"])
+@app_8000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
     for exploit in exploit_dict:
         if path == exploit["exploit_path"]:
@@ -247,7 +247,7 @@ def catch_all(path):
                 random_delay()
                 return response
     return Response("Not found", status=404)
-@app_8001.route("/", methods=["GET", "POST"])
+@app_8001.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
     for exploit in exploit_dict:
         if path == exploit["exploit_path"]:
@@ -267,7 +267,7 @@ def catch_all(path):
                 random_delay()
                 return response
     return Response("Not found", status=404)
-@app_14100.route("/", methods=["GET", "POST"])
+@app_14100.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
     for exploit in exploit_dict:
         if path == exploit["exploit_path"]:
@@ -287,7 +287,7 @@ def catch_all(path):
                 random_delay()
                 return response
     return Response("Not found", status=404)
-@app_14000.route("/", methods=["GET", "POST"])
+@app_14000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
     for exploit in exploit_dict:
         if path == exploit["exploit_path"]:
@@ -307,7 +307,7 @@ def catch_all(path):
                 random_delay()
                 return response
     return Response("Not found", status=404)
-@app_443.route("/", methods=["GET", "POST"])
+@app_443.route("/", defaults={'path': ''},methods=["GET", "POST"])
 def catch_all(path):
     for exploit in exploit_dict:
         if path == exploit["exploit_path"]:
