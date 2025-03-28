@@ -1,4 +1,5 @@
 import requests
+import socket 
 
 # --- Test T3 handshake (port 7001) ---
 def test_t3_handshake(host='129.146.76.211', port=7001):
