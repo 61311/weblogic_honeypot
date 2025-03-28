@@ -28,12 +28,61 @@ WEBLOGIC_HEADERS = {
 
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
+# Random delay to evade fingerprinting  
+def random_delay():  
+    time.sleep(random.uniform(0.5, 2.5))  
+
 # Helper functions
 def weblogic_headers(response):
     date_header = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
     WEBLOGIC_HEADERS["Date"] = date_header
     response.headers.update(WEBLOGIC_HEADERS)
     return response
+
+def extract_payload(request):  
+    payloads = {}  
+    # Get raw request body  
+    if request.data:  
+        payloads["body"] = request.data.decode(errors="ignore")  
+     # Get form data  
+    if request.form:  
+        payloads["form"] = request.form.to_dict()  
+    # Get JSON data  
+    try:  
+        json_data = request.get_json()  
+        if json_data:  
+            payloads["json"] = json_data  
+    except:  
+        pass  
+  
+    # Get query parameters  
+    if request.args:  
+        payloads["query"] = request.args.to_dict()  
+  
+    # Extract encoded payloads (Base64, URL encoding)  
+    for key, value in payloads.items():  
+        if isinstance(value, str):  
+            try:  
+                decoded_value = base64.b64decode(value).decode()  
+                payloads[f"{key}_decoded"] = decoded_value  
+            except:  
+                pass  
+  
+            try:  
+                decoded_url = urllib.parse.unquote(value)  
+                payloads[f"{key}_url_decoded"] = decoded_url  
+            except:  
+                pass  
+
+    return payloads  
+  
+# Save payloads separately for analysis  
+def save_payload(ip, data):  
+    if data:  
+        filename = f"payloads/{ip}_{int(time.time())}.txt"  
+        with open(filename, "w") as f:  
+            json.dump(data, f, indent=4)  
+        logging.info(f"[PAYLOAD SAVED] {filename}")
 
 def get_geoip(ip_address):
     geo_info = {}
@@ -88,18 +137,20 @@ app_14000 = Flask("weblogic_14000")
 app_443 = Flask("weblogic_443")
 
 # Routes
-@login_required
+
 @app_8000.route("/", methods=["GET", "POST"])
 @app_8001.route("/", methods=["GET", "POST"])
 @app_14100.route("/", methods=["GET", "POST"])
 @app_14000.route("/", methods=["GET", "POST"])
 @app_443.route("/", methods=["GET", "POST"])
+@login_required
 def login():
+    random_delay()  
     if request.method == "POST":
         ip = request.remote_addr
         details = {
-            "username": request.form.get("username"),
-            "password": request.form.get("password")
+            "username": request.form.get("j_username"),
+            "password": request.form.get("j_password")
         }
         log_event("login_attempt", ip, details)
     return render_template_string(login_page)
@@ -201,11 +252,14 @@ for exploit in exploit_dict:
             data = request.data.decode(errors='ignore')
             user_agent = request.headers.get("User-Agent", "Unknown")
             headers = dict(request.headers)
+            payload_data = extract_payload(request)
+            save_payload(ip, payload_data) 
             log_event(current_exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": current_exploit["exploit"],"headers": headers,"user_agent": user_agent})
             response_body = current_exploit["response"]
             response_status = int(current_exploit.get("response_status", 200))  
             response = Response(response_body, status=response_status)
             weblogic_headers(response)
+            random_delay()
             return response
         return log_exploit
 
