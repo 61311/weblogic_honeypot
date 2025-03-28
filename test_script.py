@@ -37,7 +37,7 @@ def test_exploit_post(host='129.146.76.211', port=8000):
     payload = b"<soap>EXPLOIT</soap>"
     try:
         resp = requests.post(f"http://{host}:{port}{path}", data=payload)
-        print(f"[Exploit POST {port}] OK:", resp.status_code)
+        print(f"[Exploit POST {port}] OK:", resp.status_code,resp.text[:100])
     except Exception as e:
         print(f"[Exploit POST {port}] FAILED:", e)
 
