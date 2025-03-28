@@ -28,6 +28,95 @@ WEBLOGIC_HEADERS = {
 
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
+# Exploit dictionary
+exploit_dict = [
+    {
+        "exploit": "CVE-2025-21549",
+        "exploit_path": "/weblogic/ready",
+        "method": "['GET']",
+        "response": "Server is ready",
+        "response_status": 200,
+        "headers": {}
+    },
+    {
+        "exploit": "CVE-2020-14750",
+        "exploit_path": "/console/images/%252e%252e%252fconsole.portal",
+        "method": "['GET']",
+        "response": "Unauthorized access",
+        "response_status": 403,
+        "headers": {}
+    },
+    {
+        "exploit": "CVE-2020-14882",
+        "exploit_path": "/console/css/%252e%252e%252fconsole.portal",
+        "method": "['GET']",
+        "response": "Unauthorized access",
+        "response_status": 403,
+        "headers": {}
+    },
+    {
+        "exploit": "CVE-2023-21839",
+        "exploit_path": "/_async/AsyncResponseService",
+        "method": "['POST']",
+        "response": "Internal Server Error",
+        "response_status": 500,
+        "headers": {}
+    },
+    {
+        "exploit": "CVE-2024-20931",
+        "exploit_path": "/console.portal",
+        "method": "['GET']",
+        "response": "Forbidden",
+        "response_status": 403,
+        "headers": {}
+    }
+]
+
+general_exploits = [
+    {
+        "exploit": "Exploit Attempt",
+        "exploit_path": "/wls-wsat/CoordinatorPortType",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {}
+    },
+    {
+        "exploit": "Exploit Attempt",
+        "exploit_path": "/wls-wsat/RegistrationPortTypeRPC",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {}
+    },
+    {
+        "exploit": "Exploit Attempt",
+        "exploit_path": "/bea_wls_internal/",
+        "method": "['GET']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {}
+    },
+    {
+        "exploit": "Exploit Attempt",
+        "exploit_path": "/uddiexplorer/",
+        "method": "['GET']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {}
+    },
+    {
+        "exploit": "Exploit Attempt",
+        "exploit_path": "/console/css/login.css",
+        "method": "['GET']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {}
+    }
+]
+
+exploit_dict.extend(general_exploits)
+
 # Random delay to evade fingerprinting  
 def random_delay():  
     time.sleep(random.uniform(0.5, 2.5))  
@@ -139,10 +228,105 @@ app_443 = Flask("weblogic_443")
 # Routes
 
 @app_8000.route("/", methods=["GET", "POST"])
+def catch_all(path):
+    for exploit in exploit_dict:
+        if path == exploit["exploit_path"]:
+            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+                # Log the exploit attempt
+                ip = request.remote_addr
+                data = request.data.decode(errors='ignore')
+                user_agent = request.headers.get("User-Agent", "Unknown")
+                headers = dict(request.headers)
+                payload_data = extract_payload(request)
+                save_payload(ip, payload_data) 
+                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                response_body = exploit["response"]
+                response_status = int(exploit.get("response_status", 200))  
+                response = Response(response_body, status=response_status)
+                weblogic_headers(response)
+                random_delay()
+                return response
+    return Response("Not found", status=404)
 @app_8001.route("/", methods=["GET", "POST"])
+def catch_all(path):
+    for exploit in exploit_dict:
+        if path == exploit["exploit_path"]:
+            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+                # Log the exploit attempt
+                ip = request.remote_addr
+                data = request.data.decode(errors='ignore')
+                user_agent = request.headers.get("User-Agent", "Unknown")
+                headers = dict(request.headers)
+                payload_data = extract_payload(request)
+                save_payload(ip, payload_data) 
+                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                response_body = exploit["response"]
+                response_status = int(exploit.get("response_status", 200))  
+                response = Response(response_body, status=response_status)
+                weblogic_headers(response)
+                random_delay()
+                return response
+    return Response("Not found", status=404)
 @app_14100.route("/", methods=["GET", "POST"])
+def catch_all(path):
+    for exploit in exploit_dict:
+        if path == exploit["exploit_path"]:
+            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+                # Log the exploit attempt
+                ip = request.remote_addr
+                data = request.data.decode(errors='ignore')
+                user_agent = request.headers.get("User-Agent", "Unknown")
+                headers = dict(request.headers)
+                payload_data = extract_payload(request)
+                save_payload(ip, payload_data) 
+                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                response_body = exploit["response"]
+                response_status = int(exploit.get("response_status", 200))  
+                response = Response(response_body, status=response_status)
+                weblogic_headers(response)
+                random_delay()
+                return response
+    return Response("Not found", status=404)
 @app_14000.route("/", methods=["GET", "POST"])
+def catch_all(path):
+    for exploit in exploit_dict:
+        if path == exploit["exploit_path"]:
+            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+                # Log the exploit attempt
+                ip = request.remote_addr
+                data = request.data.decode(errors='ignore')
+                user_agent = request.headers.get("User-Agent", "Unknown")
+                headers = dict(request.headers)
+                payload_data = extract_payload(request)
+                save_payload(ip, payload_data) 
+                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                response_body = exploit["response"]
+                response_status = int(exploit.get("response_status", 200))  
+                response = Response(response_body, status=response_status)
+                weblogic_headers(response)
+                random_delay()
+                return response
+    return Response("Not found", status=404)
 @app_443.route("/", methods=["GET", "POST"])
+def catch_all(path):
+    for exploit in exploit_dict:
+        if path == exploit["exploit_path"]:
+            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+                # Log the exploit attempt
+                ip = request.remote_addr
+                data = request.data.decode(errors='ignore')
+                user_agent = request.headers.get("User-Agent", "Unknown")
+                headers = dict(request.headers)
+                payload_data = extract_payload(request)
+                save_payload(ip, payload_data) 
+                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                response_body = exploit["response"]
+                response_status = int(exploit.get("response_status", 200))  
+                response = Response(response_body, status=response_status)
+                weblogic_headers(response)
+                random_delay()
+                return response
+    return Response("Not found", status=404)
 @login_required
 def login():
     random_delay()  
@@ -155,117 +339,6 @@ def login():
         log_event("login_attempt", ip, details)
     return render_template_string(login_page)
 
-# Exploit dictionary
-exploit_dict = [
-    {
-        "exploit": "CVE-2025-21549",
-        "exploit_path": "/weblogic/ready",
-        "method": "['GET']",
-        "response": "Server is ready",
-        "response_status": 200,
-        "headers": {}
-    },
-    {
-        "exploit": "CVE-2020-14750",
-        "exploit_path": "/console/images/%252e%252e%252fconsole.portal",
-        "method": "['GET']",
-        "response": "Unauthorized access",
-        "response_status": 403,
-        "headers": {}
-    },
-    {
-        "exploit": "CVE-2020-14882",
-        "exploit_path": "/console/css/%252e%252e%252fconsole.portal",
-        "method": "['GET']",
-        "response": "Unauthorized access",
-        "response_status": 403,
-        "headers": {}
-    },
-    {
-        "exploit": "CVE-2023-21839",
-        "exploit_path": "/_async/AsyncResponseService",
-        "method": "['POST']",
-        "response": "Internal Server Error",
-        "response_status": 500,
-        "headers": {}
-    },
-    {
-        "exploit": "CVE-2024-20931",
-        "exploit_path": "/console.portal",
-        "method": "['GET']",
-        "response": "Forbidden",
-        "response_status": 403,
-        "headers": {}
-    }
-]
-
-general_exploits = [
-    {
-        "exploit": "Exploit Attempt",
-        "exploit_path": "/wls-wsat/CoordinatorPortType",
-        "method": "['POST']",
-        "response": "Access denied",
-        "response_status": 403,
-        "headers": {}
-    },
-    {
-        "exploit": "Exploit Attempt",
-        "exploit_path": "/wls-wsat/RegistrationPortTypeRPC",
-        "method": "['POST']",
-        "response": "Access denied",
-        "response_status": 403,
-        "headers": {}
-    },
-    {
-        "exploit": "Exploit Attempt",
-        "exploit_path": "/bea_wls_internal/",
-        "method": "['GET']",
-        "response": "Access denied",
-        "response_status": 403,
-        "headers": {}
-    },
-    {
-        "exploit": "Exploit Attempt",
-        "exploit_path": "/uddiexplorer/",
-        "method": "['GET']",
-        "response": "Access denied",
-        "response_status": 403,
-        "headers": {}
-    },
-    {
-        "exploit": "Exploit Attempt",
-        "exploit_path": "/console/css/login.css",
-        "method": "['GET']",
-        "response": "Access denied",
-        "response_status": 403,
-        "headers": {}
-    }
-]
-
-exploit_dict.extend(general_exploits)
-
-# Define routes for exploits
-for exploit in exploit_dict:
-    def create_log_exploit(current_exploit=exploit):
-        def log_exploit():
-            ip = request.remote_addr
-            data = request.data.decode(errors='ignore')
-            user_agent = request.headers.get("User-Agent", "Unknown")
-            headers = dict(request.headers)
-            payload_data = extract_payload(request)
-            save_payload(ip, payload_data) 
-            log_event(current_exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": current_exploit["exploit"],"headers": headers,"user_agent": user_agent})
-            response_body = current_exploit["response"]
-            response_status = int(current_exploit.get("response_status", 200))  
-            response = Response(response_body, status=response_status)
-            weblogic_headers(response)
-            random_delay()
-            return response
-        return log_exploit
-
-    log_exploit_func = create_log_exploit()
-    for app in [app_8000, app_8001, app_14100, app_14000, app_443]:
-        app.add_url_rule(exploit["exploit_path"], view_func=log_exploit_func, methods=[exploit["method"].strip("[]").replace("'", "").strip()])
 
 # Run Flask apps
 def run_flask_app(app, port, use_ssl=False):
