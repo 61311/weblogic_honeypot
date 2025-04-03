@@ -11,6 +11,7 @@ import base64
 import geoip2.database
 import json
 import time
+import random
 
 # - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
 # - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
@@ -209,7 +210,7 @@ def get_geoip(ip_address):
         "isp": isp,
     }
 
-def log_event(event_type, ip, details):
+def log_mal_event(event_type, ip, details):
     log_entry = {
         "timestamp": datetime.datetime.utcnow().isoformat(),
         "event_type": event_type,
@@ -217,7 +218,19 @@ def log_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypot_events.json", "a") as log_file:
+    with open("honeypot_mal_events.json", "a") as log_file:
+        json.dump(log_entry, log_file)
+        log_file.write("\n")
+        
+def log_gen_event(event_type, ip, details):
+    log_entry = {
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "event_type": event_type,
+        "source_ip": ip,
+        "geoip": get_geoip(ip),
+        "details": details
+    }
+    with open("honeypot_gen_events.json", "a") as log_file:
         json.dump(log_entry, log_file)
         log_file.write("\n")
 
@@ -233,6 +246,8 @@ app_14101= Flask("weblogic_14101")
 
 def process_input(path):
     for exploit in exploit_dict:
+        print(path)
+        print(request.data.decode(errors='ignore'))
         if path == exploit["exploit_path"]:
             if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
                 # Log the exploit attempt
@@ -242,7 +257,21 @@ def process_input(path):
                 headers = dict(request.headers)
                 payload_data = extract_payload(request)
                 save_payload(ip, payload_data) 
-                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                log_mal_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                response_body = exploit["response"]
+                response_status = int(exploit.get("response_status", 200))  
+                response = Response(response_body, status=response_status)
+                weblogic_headers(response)
+                random_delay()
+                return response
+        else:
+                ip = request.remote_addr
+                data = request.data.decode(errors='ignore')
+                user_agent = request.headers.get("User-Agent", "Unknown")
+                headers = dict(request.headers)
+                payload_data = extract_payload(request)
+                save_payload(ip, payload_data) 
+                log_gen_event( "General Event Record",ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
                 response_body = exploit["response"]
                 response_status = int(exploit.get("response_status", 200))  
                 response = Response(response_body, status=response_status)
