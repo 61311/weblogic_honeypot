@@ -233,8 +233,8 @@ app_14101= Flask("weblogic_14101")
 
 def process_input(path):
     for exploit in exploit_dict:
-            print(path)
-            print(request.data.decode(errors='ignore'))
+        print(path)
+        print(request.data.decode(errors='ignore'))
         if path == exploit["exploit_path"]:
             if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
                 # Log the exploit attempt
