@@ -229,130 +229,48 @@ app_14000 = Flask("weblogic_14000")
 app_443 = Flask("weblogic_443")
 app_14101= Flask("weblogic_14101")
 
+# Processing of Request/Response
+
+def process_input(path):
+    for exploit in exploit_dict:
+        if path == exploit["exploit_path"]:
+            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+                # Log the exploit attempt
+                ip = request.remote_addr
+                data = request.data.decode(errors='ignore')
+                user_agent = request.headers.get("User-Agent", "Unknown")
+                headers = dict(request.headers)
+                payload_data = extract_payload(request)
+                save_payload(ip, payload_data) 
+                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                response_body = exploit["response"]
+                response_status = int(exploit.get("response_status", 200))  
+                response = Response(response_body, status=response_status)
+                weblogic_headers(response)
+                random_delay()
+                return response
+    return Response("Not found", status=404)
+
 # Routes
 
 @app_8000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    for exploit in exploit_dict:
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
+    process_input(path)
 @app_8001.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    for exploit in exploit_dict:
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
+    process_input(path)
 @app_14100.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    for exploit in exploit_dict:
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
+    process_input(path)
 @app_14000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    for exploit in exploit_dict:
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
+    process_input(path)
 @app_443.route("/", defaults={'path': ''},methods=["GET", "POST"])
 def catch_all(path):
-    for exploit in exploit_dict:
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
-
-
+    process_input(path)
 @app_14101.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    for exploit in exploit_dict:
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
+    process_input(path)
 
 
 # @login_required("/", methods=["GET", "POST"])
