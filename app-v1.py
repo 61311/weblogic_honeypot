@@ -255,22 +255,22 @@ def process_input(path):
 
 @app_8000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    process_input(path)
+    return process_input(path)
 @app_8001.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    process_input(path)
+    return process_input(path)
 @app_14100.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    process_input(path)
+    return process_input(path)
 @app_14000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    process_input(path)
+    return process_input(path)
 @app_443.route("/", defaults={'path': ''},methods=["GET", "POST"])
 def catch_all(path):
-    process_input(path)
+    return process_input(path)
 @app_14101.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    process_input(path)
+    return process_input(path)
 
 
 # @login_required("/", methods=["GET", "POST"])
