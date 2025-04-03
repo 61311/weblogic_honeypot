@@ -229,7 +229,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypo_gen_events.json", "a") as log_file:
+    with open("honeypot_gen_events.json", "a") as log_file:
         json.dump(log_entry, log_file)
         log_file.write("\n")
 
@@ -270,7 +270,7 @@ def process_input(path):
                 headers = dict(request.headers)
                 payload_data = extract_payload(request)
                 save_payload(ip, payload_data) 
-                log_gen_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
+                log_gen_event( "General Event Record",ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
                 response_body = exploit["response"]
                 response_status = int(exploit.get("response_status", 200))  
                 response = Response(response_body, status=response_status)
