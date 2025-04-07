@@ -116,7 +116,6 @@ exploit_dict = [
     }
 ]
 
-exploit_dict.extend(general_exploits)
 
 # Random delay to evade fingerprinting  
 def random_delay():  
