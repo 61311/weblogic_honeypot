@@ -309,25 +309,13 @@ def catch_all(path):
 @app_14101.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
     return process_input(path)
-@app.route('/oam/server/auth_cred_submit', methods=['POST'])
-def login():
-    username = request.form['username']
-    password = request.form['password']
-    # Do something with the username and password
-    print(f"Username: {username}, Password: {password}")
-    return 'Login successful'
-
-# @login_required("/", methods=["GET", "POST"])
+# @app.route('/oam/server/auth_cred_submit', methods=['POST'])
 # def login():
-#     random_delay()  
-#     if request.method == "POST":
-#         ip = request.remote_addr
-#         details = {
-#             "username": request.form.get("j_username"),
-#             "password": request.form.get("j_password")
-#         }
-#         log_event("login_attempt", ip, details)
-#     return render_template_string(login_page)
+#     username = request.form['username']
+#     password = request.form['password']
+#     # Do something with the username and password
+#     print(f"Username: {username}, Password: {password}")
+#     return 'Login successful'
 
 
 # Run Flask apps
