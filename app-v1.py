@@ -329,10 +329,10 @@ for port, app in apps.items():
     def serve_image(filename):
         return send_from_directory('source/oam/pages/images', filename)
     @app.route('/css/<path:filename>')
-    def serve_image(filename):
+    def serve_css(filename):
         return send_from_directory('source/oam/pages/css', filename)
     @app.route('/js/<path:filename>')
-    def serve_image(filename):
+    def serve_js(filename):
         return send_from_directory('source/oam/pages/js', filename)
 
 
