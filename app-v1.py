@@ -301,11 +301,11 @@ def process_input(path: str, request: Request) -> Response:
         "user_agent": user_agent
     })
     save_payload(ip, payload_data)
-    return send_from_directory('source', 'index.html')
+    return send_from_directory('source/oam/pages', 'login.html')
 
 # Routes
 def serve_index():
-    return send_from_directory('source', 'index.html')
+    return send_from_directory('source/oam/pages', 'login.html')
 
 # Flask app initialization
 apps = {
