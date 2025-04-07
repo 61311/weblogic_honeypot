@@ -1,6 +1,6 @@
 import socket
 import threading
-from flask import Flask, request, render_template_string, Response, send_from_directory
+from flask import Flask, request, render_template_string, Response, send_from_directory, Request
 import ssl
 import os
 import json
