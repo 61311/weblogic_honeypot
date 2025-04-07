@@ -365,7 +365,7 @@ def t3_handshake_sim(port=7001):
                 print("[*] Connection closed")
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask_app, args=(app_8000, 8000)).start()
+    threading.Thread(target=run_flask_app, args=(app_8000, 8000,True)).start()
     threading.Thread(target=run_flask_app, args=(app_8001, 8001)).start()
     threading.Thread(target=run_flask_app, args=(app_14100, 14100)).start()
     threading.Thread(target=run_flask_app, args=(app_14000, 14000)).start()
