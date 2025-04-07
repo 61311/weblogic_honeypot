@@ -239,7 +239,7 @@ app_443 = Flask("weblogic_443")
 app_14101= Flask("weblogic_14101")
 
 # Processing of Request/Response
-def process_request(path: str, request: Request) -> Response:
+def process_input(path: str, request: Request) -> Response:
     """Process an incoming request and check for potential exploits."""
     
     def handle_exploit(exploit: dict) -> None:
