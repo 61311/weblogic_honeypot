@@ -1,6 +1,6 @@
 import socket
 import threading
-from flask import Flask, request, render_template_string, Response
+from flask import Flask, request, render_template_string, Response, send_from_directory, Request
 import ssl
 import os
 import json
@@ -15,6 +15,27 @@ import random
 
 # - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
 # - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
+
+
+'''
+sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3
+
+[Unit]
+Description=WebLogic Honeypot Service
+After=network.target
+
+[Service]
+Type=simple
+User=yourusername
+WorkingDirectory=/path/to/your/script
+ExecStart=/usr/bin/python3 /path/to/your/script/app-v1.py
+Restart=on-failure
+
+# Allow binding to port 443
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target'''
 
 # Constants
 WEBLOGIC_HEADERS = {
@@ -73,10 +94,7 @@ exploit_dict = [
         "response": "Forbidden",
         "response_status": 403,
         "headers": {}
-    }
-]
-
-general_exploits = [
+    },
     {
         "exploit": "Exploit Attempt",
         "exploit_path": "/wls-wsat/CoordinatorPortType",
@@ -119,7 +137,6 @@ general_exploits = [
     }
 ]
 
-exploit_dict.extend(general_exploits)
 
 # Random delay to evade fingerprinting  
 def random_delay():  
@@ -234,85 +251,91 @@ def log_gen_event(event_type, ip, details):
         json.dump(log_entry, log_file)
         log_file.write("\n")
 
-# Flask apps
-app_8000 = Flask("weblogic_8000")
-app_8001 = Flask("weblogic_8001")
-app_14100 = Flask("weblogic_14100")
-app_14000 = Flask("weblogic_14000")
-app_443 = Flask("weblogic_443")
-app_14101= Flask("weblogic_14101")
 
 # Processing of Request/Response
-
-def process_input(path):
+def process_input(path: str, request: Request) -> Response:
+    """Process an incoming request and check for potential exploits."""
+    
+    def handle_exploit(exploit: dict) -> None:
+        """Handle a detected exploit."""
+        ip = request.remote_addr
+        request_data = request.data.decode(errors='ignore')
+        user_agent = request.headers.get("User-Agent", "Unknown")
+        headers = dict(request.headers)
+        payload_data = extract_payload(request)
+        
+        log_mal_event(exploit["exploit"], ip, {
+            "path": request.path,
+            "payload": request_data,
+            "exploit": exploit["exploit"],
+            "headers": headers,
+            "user_agent": user_agent
+        })
+        
+        save_payload(ip, payload_data)
+        
+        response_body = exploit["response"]
+        response_status = int(exploit.get("response_status", 200))
+        response = Response(response_body, status=response_status)
+        weblogic_headers(response)
+        random_delay()
+        return response
+    
     for exploit in exploit_dict:
         print(path)
         print(request.data.decode(errors='ignore'))
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_mal_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-        else:
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_gen_event( "General Event Record",ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
+        
+        if path == exploit["exploit_path"] and request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+            return handle_exploit(exploit)
+    
+    # If no exploit is matched, log a general event and serve the index.html file
+    ip = request.remote_addr
+    request_data = request.data.decode(errors='ignore')
+    user_agent = request.headers.get("User-Agent", "Unknown")
+    headers = dict(request.headers)
+    payload_data = extract_payload(request)
+    log_gen_event("General Event Record", ip, {
+        "path": request.path,
+        "payload": request_data,
+        "headers": headers,
+        "user_agent": user_agent
+    })
+    save_payload(ip, payload_data)
+    return send_from_directory('source/oam/pages', 'login.html')
 
 # Routes
+def serve_index():
+    return send_from_directory('source/oam/pages', 'login.html')
 
-@app_8000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path)
-@app_8001.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path)
-@app_14100.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path)
-@app_14000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path)
-@app_443.route("/", defaults={'path': ''},methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path)
-@app_14101.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path)
+# Flask app initialization
+apps = {
+    8000: Flask("weblogic_8000"),
+    8001: Flask("weblogic_8001"),
+    14100: Flask("weblogic_14100"),
+    14000: Flask("weblogic_14000"),
+    443: Flask("weblogic_443"),
+    14101: Flask("weblogic_14101")
+}
+
+# Unified route for all apps
+for port, app in apps.items():
+    @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
+    @app.route("/<path:path>", methods=["GET", "POST"])
+    def catch_all(path):
+        if path == "" or path == "/":
+            return serve_index()
+        return process_input(path, request)
+    @app.route('/images/<path:filename>')
+    def serve_image(filename):
+        return send_from_directory('source/oam/pages/images', filename)
+    @app.route('/css/<path:filename>')
+    def serve_css(filename):
+        return send_from_directory('source/oam/pages/css', filename)
+    @app.route('/js/<path:filename>')
+    def serve_js(filename):
+        return send_from_directory('source/oam/pages/js', filename)
 
 
-# @login_required("/", methods=["GET", "POST"])
-# def login():
-#     random_delay()  
-#     if request.method == "POST":
-#         ip = request.remote_addr
-#         details = {
-#             "username": request.form.get("j_username"),
-#             "password": request.form.get("j_password")
-#         }
-#         log_event("login_attempt", ip, details)
-#     return render_template_string(login_page)
 
 
 # Run Flask apps
@@ -362,9 +385,7 @@ def t3_handshake_sim(port=7001):
                 print("[*] Connection closed")
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask_app, args=(app_8000, 8000)).start()
-    threading.Thread(target=run_flask_app, args=(app_8001, 8001)).start()
-    threading.Thread(target=run_flask_app, args=(app_14100, 14100)).start()
-    threading.Thread(target=run_flask_app, args=(app_14000, 14000)).start()
-    threading.Thread(target=run_flask_app, args=(app_443, 443, True)).start()
+    for port, app in apps.items():
+        use_ssl = (port == 443)  # Use SSL only on port 443
+        threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
     t3_handshake_sim(port=7001)
