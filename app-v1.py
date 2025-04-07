@@ -293,22 +293,22 @@ def process_input(path: str, request: Request) -> Response:
 
 @app_8000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    return process_input(path)
+    return process_input(path,request)
 @app_8001.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    return process_input(path)
+    return process_input(path,request)
 @app_14100.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    return process_input(path)
+    return process_input(path,request)
 @app_14000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    return process_input(path)
+    return process_input(path,request)
 @app_443.route("/", defaults={'path': ''},methods=["GET", "POST"])
 def catch_all(path):
-    return process_input(path)
+    return process_input(path,request)
 @app_14101.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
-    return process_input(path)
+    return process_input(path,request)
 # @app.route('/oam/server/auth_cred_submit', methods=['POST'])
 # def login():
 #     username = request.form['username']
