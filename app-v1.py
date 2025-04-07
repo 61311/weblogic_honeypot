@@ -328,6 +328,12 @@ for port, app in apps.items():
     @app.route('/images/<path:filename>')
     def serve_image(filename):
         return send_from_directory('source/oam/pages/images', filename)
+    @app.route('/css/<path:filename>')
+    def serve_image(filename):
+        return send_from_directory('source/oam/pages/css', filename)
+    @app.route('/js/<path:filename>')
+    def serve_image(filename):
+        return send_from_directory('source/oam/pages/js', filename)
 
 
 
