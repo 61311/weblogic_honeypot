@@ -230,13 +230,6 @@ def log_gen_event(event_type, ip, details):
         json.dump(log_entry, log_file)
         log_file.write("\n")
 
-# Flask apps
-app_8000 = Flask("weblogic_8000")
-app_8001 = Flask("weblogic_8001")
-app_14100 = Flask("weblogic_14100")
-app_14000 = Flask("weblogic_14000")
-app_443 = Flask("weblogic_443")
-app_14101= Flask("weblogic_14101")
 
 # Processing of Request/Response
 def process_input(path: str, request: Request) -> Response:
@@ -290,32 +283,30 @@ def process_input(path: str, request: Request) -> Response:
     return send_from_directory('source', 'index.html')
 
 # Routes
+def serve_index():
+    return send_from_directory('source', 'index.html')
 
-@app_8000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path,request)
-@app_8001.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path,request)
-@app_14100.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path,request)
-@app_14000.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path,request)
-@app_443.route("/", defaults={'path': ''},methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path,request)
-@app_14101.route("/",defaults={'path': ''}, methods=["GET", "POST"])
-def catch_all(path):
-    return process_input(path,request)
-# @app.route('/oam/server/auth_cred_submit', methods=['POST'])
-# def login():
-#     username = request.form['username']
-#     password = request.form['password']
-#     # Do something with the username and password
-#     print(f"Username: {username}, Password: {password}")
-#     return 'Login successful'
+# Flask app initialization
+apps = {
+    8000: Flask("weblogic_8000"),
+    8001: Flask("weblogic_8001"),
+    14100: Flask("weblogic_14100"),
+    14000: Flask("weblogic_14000"),
+    443: Flask("weblogic_443"),
+    14101: Flask("weblogic_14101")
+}
+
+# Unified route for all apps
+for port, app in apps.items():
+    @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
+    @app.route("/<path:path>", methods=["GET", "POST"])
+    def catch_all(path):
+        if path == "" or path == "/":
+            return serve_index()
+        return process_input(path, request)
+
+
+
 
 
 # Run Flask apps
