@@ -16,6 +16,27 @@ import random
 # - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
 # - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
 
+
+'''
+sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3
+
+[Unit]
+Description=WebLogic Honeypot Service
+After=network.target
+
+[Service]
+Type=simple
+User=yourusername
+WorkingDirectory=/path/to/your/script
+ExecStart=/usr/bin/python3 /path/to/your/script/app-v1.py
+Restart=on-failure
+
+# Allow binding to port 443
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target'''
+
 # Constants
 WEBLOGIC_HEADERS = {
     "X-Powered-By": "Servlet/2.5 JSP/2.1",
@@ -356,9 +377,7 @@ def t3_handshake_sim(port=7001):
                 print("[*] Connection closed")
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask_app, args=(app_8000, 8000,True)).start()
-    threading.Thread(target=run_flask_app, args=(app_8001, 8001)).start()
-    threading.Thread(target=run_flask_app, args=(app_14100, 14100)).start()
-    threading.Thread(target=run_flask_app, args=(app_14000, 14000)).start()
-    threading.Thread(target=run_flask_app, args=(app_443, 443, True)).start()
+    for port, app in apps.items():
+        use_ssl = (port == 443)  # Use SSL only on port 443
+        threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
     t3_handshake_sim(port=7001)
