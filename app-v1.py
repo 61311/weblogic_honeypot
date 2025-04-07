@@ -1,6 +1,6 @@
 import socket
 import threading
-from flask import Flask, request, render_template_string, Response
+from flask import Flask, request, render_template_string, Response, send_from_directory
 import ssl
 import os
 import json
@@ -73,10 +73,7 @@ exploit_dict = [
         "response": "Forbidden",
         "response_status": 403,
         "headers": {}
-    }
-]
-
-general_exploits = [
+    },
     {
         "exploit": "Exploit Attempt",
         "exploit_path": "/wls-wsat/CoordinatorPortType",
@@ -243,42 +240,55 @@ app_443 = Flask("weblogic_443")
 app_14101= Flask("weblogic_14101")
 
 # Processing of Request/Response
-
-def process_input(path):
+def process_request(path: str, request: Request) -> Response:
+    """Process an incoming request and check for potential exploits."""
+    
+    def handle_exploit(exploit: dict) -> None:
+        """Handle a detected exploit."""
+        ip = request.remote_addr
+        request_data = request.data.decode(errors='ignore')
+        user_agent = request.headers.get("User-Agent", "Unknown")
+        headers = dict(request.headers)
+        payload_data = extract_payload(request)
+        
+        log_mal_event(exploit["exploit"], ip, {
+            "path": request.path,
+            "payload": request_data,
+            "exploit": exploit["exploit"],
+            "headers": headers,
+            "user_agent": user_agent
+        })
+        
+        save_payload(ip, payload_data)
+        
+        response_body = exploit["response"]
+        response_status = int(exploit.get("response_status", 200))
+        response = Response(response_body, status=response_status)
+        weblogic_headers(response)
+        random_delay()
+        return response
+    
     for exploit in exploit_dict:
         print(path)
         print(request.data.decode(errors='ignore'))
-        if path == exploit["exploit_path"]:
-            if request.method in exploit["method"].strip("[]").replace("'", "").split(','):
-                # Log the exploit attempt
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_mal_event(exploit["exploit"], ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-        else:
-                ip = request.remote_addr
-                data = request.data.decode(errors='ignore')
-                user_agent = request.headers.get("User-Agent", "Unknown")
-                headers = dict(request.headers)
-                payload_data = extract_payload(request)
-                save_payload(ip, payload_data) 
-                log_gen_event( "General Event Record",ip, {"path": request.path, "payload": data, "exploit": exploit["exploit"],"headers": headers,"user_agent": user_agent})
-                response_body = exploit["response"]
-                response_status = int(exploit.get("response_status", 200))  
-                response = Response(response_body, status=response_status)
-                weblogic_headers(response)
-                random_delay()
-                return response
-    return Response("Not found", status=404)
+        
+        if path == exploit["exploit_path"] and request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+            return handle_exploit(exploit)
+    
+    # If no exploit is matched, log a general event and serve the index.html file
+    ip = request.remote_addr
+    request_data = request.data.decode(errors='ignore')
+    user_agent = request.headers.get("User-Agent", "Unknown")
+    headers = dict(request.headers)
+    payload_data = extract_payload(request)
+    log_gen_event("General Event Record", ip, {
+        "path": request.path,
+        "payload": request_data,
+        "headers": headers,
+        "user_agent": user_agent
+    })
+    save_payload(ip, payload_data)
+    return send_from_directory('source', 'index.html')
 
 # Routes
 
@@ -300,7 +310,13 @@ def catch_all(path):
 @app_14101.route("/",defaults={'path': ''}, methods=["GET", "POST"])
 def catch_all(path):
     return process_input(path)
-
+@app.route('/oam/server/auth_cred_submit', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    # Do something with the username and password
+    print(f"Username: {username}, Password: {password}")
+    return 'Login successful'
 
 # @login_required("/", methods=["GET", "POST"])
 # def login():
