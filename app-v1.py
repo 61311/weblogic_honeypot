@@ -328,8 +328,7 @@ apps = {
 
 # Unified route for all apps
 for port, app in apps.items():
-    @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
-    @app.route("/<path:path>", methods=["GET", "POST"])
+
     @app.route('/log', methods=['POST'])
     def log_credentials():
         try:
@@ -356,10 +355,6 @@ for port, app in apps.items():
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
         return "Login failed. Invalid credentials.", 403
-    def catch_all(path):
-        if path == "" or path == "/":
-            return serve_index()
-        return process_input(path, request)
     @app.route('/images/<path:filename>')
     def serve_image(filename):
         return send_from_directory('source/oam/pages/images', filename)
@@ -369,6 +364,13 @@ for port, app in apps.items():
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         return send_from_directory('source/oam/pages/js', filename)
+    @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
+    @app.route("/<path:path>", methods=["GET", "POST"])
+    def catch_all(path):
+        if path == "" or path == "/":
+            return serve_index()
+        return process_input(path, request)
+
 
 
 
