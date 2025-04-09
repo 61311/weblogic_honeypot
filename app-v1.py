@@ -398,38 +398,38 @@ def t3_handshake_sim(port=7001):
         server_socket.listen(5)
         print(f"[*] T3 honeypot listening on port {port}")
 
-    while not stop_threads.is_set():
-        try:
-            client_socket, addr = server_socket.accept()
-            ip = addr[0]
-            print(f"[+] Connection from {addr}")
-
+        while not stop_threads.is_set():
             try:
-                data = client_socket.recv(1024)
-                if b"\xac\xed\x00\x05" in data:
-                    log_gen_event("serialized_object", ip, {"raw": data.hex()})
+                client_socket, addr = server_socket.accept()
+                ip = addr[0]
+                print(f"[+] Connection from {addr}")
 
-                decoded = data.decode(errors='ignore')
-                print(f"[>] Received: {decoded.strip()}")
+                try:
+                    data = client_socket.recv(1024)
+                    if b"\xac\xed\x00\x05" in data:
+                        log_gen_event("serialized_object", ip, {"raw": data.hex()})
 
-                if decoded.startswith("t3"):
-                    response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
-                    client_socket.sendall(response.encode())
-                    print("[<] Sent T3 handshake response")
-                else:
-                    log_gen_event("unexpected_data", ip, {"raw": decoded.strip()})
+                    decoded = data.decode(errors='ignore')
+                    print(f"[>] Received: {decoded.strip()}")
 
-                payload = client_socket.recv(4096)
-                if payload:
-                    log_gen_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
+                    if decoded.startswith("t3"):
+                        response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
+                        client_socket.sendall(response.encode())
+                        print("[<] Sent T3 handshake response")
+                    else:
+                        log_gen_event("unexpected_data", ip, {"raw": decoded.strip()})
 
-            except Exception as e:
-                print(f"[!] Error: {e}")
-            finally:
-                client_socket.close()
-                print("[*] Connection closed")
-        except socket.error:
-            break
+                    payload = client_socket.recv(4096)
+                    if payload:
+                        log_gen_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
+
+                except Exception as e:
+                    print(f"[!] Error: {e}")
+                finally:
+                    client_socket.close()
+                    print("[*] Connection closed")
+            except socket.error:
+                break
 
 
 if __name__ == "__main__":
