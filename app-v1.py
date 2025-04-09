@@ -312,7 +312,7 @@ def log_mal_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    general_logger.info(json.dumps(log_entry))
+    exploit_logger_logger.info(json.dumps(log_entry))
         
 def log_gen_event(event_type, ip, details):
     log_entry = {
@@ -322,7 +322,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    exploit_logger.info(json.dumps(log_entry))
+    general_logger.info(json.dumps(log_entry))
 
 
 # Processing of Request/Response
