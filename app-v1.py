@@ -38,10 +38,12 @@ AmbientCapabilities=CAP_NET_BIND_SERVICE
 [Install]
 WantedBy=multi-user.target'''
 
-from logging_util import setup_logger
 
-logger = setup_logger('honeypot')
-logger.info("Honeypot started")
+log_dir = 'logs'
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, 'honeypot.log')
+logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('honeypot')
 
 # Constants
 WEBLOGIC_HEADERS = {
