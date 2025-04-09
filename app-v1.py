@@ -12,6 +12,7 @@ import geoip2.database
 import json
 import time
 import random
+import logging
 
 # - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
 # - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
@@ -36,6 +37,11 @@ AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target'''
+
+from logging_util import setup_logger
+
+logger = setup_logger('honeypot')
+logger.info("Honeypot started")
 
 # Constants
 WEBLOGIC_HEADERS = {
@@ -334,6 +340,22 @@ for port, app in apps.items():
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         return send_from_directory('source/oam/pages/js', filename)
+    @app.route('/log', methods=['POST'])
+    def log_credentials():
+        try:
+            data = request.get_json()
+            username = data.get('username')
+            password = data.get('password')
+            ip = request.remote_addr
+            event_details = f"Captured credentials - Username: {username}, Password: {password}"
+            
+            # Use the existing logging function to log as a general event
+            log_gen_event("credential_capture", ip, event_details)
+
+            return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
+        except Exception as e:
+            logger.error(f"Error logging credentials: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 
