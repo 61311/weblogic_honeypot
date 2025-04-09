@@ -295,21 +295,21 @@ def process_input(path: str, request: Request) -> Response:
         
         if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
-    
+        else:
     # If no exploit is matched, log a general event and serve the index.html file
-    ip = request.remote_addr
-    request_data = request.data.decode(errors='ignore')
-    user_agent = request.headers.get("User-Agent", "Unknown")
-    headers = dict(request.headers)
-    payload_data = extract_payload(request)
-    log_gen_event("General Event Record", ip, {
-        "path": request.path,
-        "payload": request_data,
-        "headers": headers,
-        "user_agent": user_agent
-    })
-    save_payload(ip, payload_data)
-    return send_from_directory('source/oam/pages', 'login.html')
+            ip = request.remote_addr
+            request_data = request.data.decode(errors='ignore')
+            user_agent = request.headers.get("User-Agent", "Unknown")
+            headers = dict(request.headers)
+            payload_data = extract_payload(request)
+            log_gen_event("General Event Record", ip, {
+                "path": request.path,
+                "payload": request_data,
+                "headers": headers,
+                "user_agent": user_agent
+            })
+            save_payload(ip, payload_data)
+            return send_from_directory('source/oam/pages', 'login.html')
 
 # Routes
 def serve_index():
