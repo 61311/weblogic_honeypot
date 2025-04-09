@@ -372,7 +372,7 @@ def process_input(path: str, request: Request) -> Response:
     save_payload(ip, payload_data)
     directory_path = 'source/oam/pages'
     if not os.path.exists(directory_path):
-        logger.error(f"Directory not found: {directory_path}")
+        system_logger.error(f"Directory not found: {directory_path}")
         return Response("Internal Server Error: Directory not found", status=500)
     return send_from_directory(directory_path, 'login.html')
 
@@ -406,11 +406,10 @@ for port, app in apps.items():
             event_details = f"Captured credentials - Username: {username}, Password: {password}"
 
             log_gen_event("credential_capture", ip, event_details)
-            logger.info(f"Captured credentials from {ip}: {event_details}")
 
             return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
         except Exception as e:
-            logger.error(f"Error logging credentials: {str(e)}")
+            log_gen_event(f"Error logging credentials: {str(e)}")
             return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
