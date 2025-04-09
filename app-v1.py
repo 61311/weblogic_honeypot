@@ -365,6 +365,7 @@ def process_input(path: str, request: Request) -> Response:
     headers = dict(request.headers)
     payload_data = extract_payload(request)
     log_gen_event("General Event Record", ip, {
+        "path": request.path,
         "payload": payload_data,
         "headers": headers,
         "user_agent": user_agent
