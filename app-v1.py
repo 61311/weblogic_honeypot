@@ -152,7 +152,23 @@ exploit_dict = [
         "response": "Access denied",
         "response_status": 403,
         "headers": {}
-    }
+    },
+        {
+        "exploit": "Exploit Attempt",
+        "exploit_path": "/OA_HTML/BneOfflineLOVService",
+        "method": "['POST']",
+        "response": '''<?xml version="1.0" encoding="UTF-8"?><bne:document xmlns:bne="http://www.oracle.com/bne"><bne:messages xmlns:bne="http://www.oracle.com/bne"><bne:message bne:type="ERROR" bne:text="Cannot be logged in as GUEST." bne:cause="" bne:action="" /></bne:messages></bne:document>''',
+        "response_status": 200,
+        "headers": {}
+    },
+        {
+        "exploit": "Exploit Attempt",
+        "exploit_path": "/oamconsole/afr/a/remote/",
+        "method": "['GET']",
+        "response": "ADF_FACES-30200:For more information, please see the server&#39;s error log for an entry beginning with: The UIViewRoot is null. Fatal exception during PhaseId: RESTORE_VIEW 1.",
+        "response_status": 500,
+        "headers": {}
+        }
 ]
 
 
