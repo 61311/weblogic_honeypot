@@ -293,7 +293,7 @@ def process_input(path: str, request: Request) -> Response:
         print(path)
         print(request.data.decode(errors='ignore'))
         
-        if path == exploit["exploit_path"]:
+        if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
     
     # If no exploit is matched, log a general event and serve the index.html file
@@ -317,6 +317,7 @@ def serve_index():
 
 # Flask app initialization
 apps = {
+    80: Flask("weblogic_80"),
     8000: Flask("weblogic_8000"),
     8001: Flask("weblogic_8001"),
     14100: Flask("weblogic_14100"),
