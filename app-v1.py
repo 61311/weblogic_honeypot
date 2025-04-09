@@ -430,4 +430,4 @@ if __name__ == "__main__":
     for port, app in apps.items():
         use_ssl = (port == 443)  # Use SSL only on port 443
         threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
-    t3_handshake_sim(port=7001)
+    threading.Thread(target=t3_handshake_sim, args=(7001,), daemon=True).start()
