@@ -346,19 +346,25 @@ for port, app in apps.items():
     @app.route('/log', methods=['POST'])
     def log_credentials():
         try:
-            data = request.get_json()
-            username = data.get('username')
-            password = data.get('password')
-            ip = request.remote_addr
-            event_details = f"Captured credentials - Username: {username}, Password: {password}"
-            
-            # Use the existing logging function to log as a general event
-            log_gen_event("credential_capture", ip, event_details)
+                data = request.get_json()
+                if not data or 'username' not in data or 'password' not in data:
+                    return jsonify({'status': 'error', 'message': 'Invalid request data'}), 400
+                
+                username = data['username']
+                password = data['password']
+                ip = request.remote_addr
+                event_details = f"Captured credentials - Username: {username}, Password: {password}"
+                
+                # Use the existing logging function to log as a general event
+                log_gen_event("credential_capture", ip, event_details)
 
-            return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
+                return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
+        except KeyError as e:
+                logger.error(f"Missing key in request data: {str(e)}")
+                return jsonify({'status': 'error', 'message': 'Invalid request data'}), 400
         except Exception as e:
-            logger.error(f"Error logging credentials: {str(e)}")
-            return jsonify({'status': 'error', 'message': str(e)}), 500
+                logger.error(f"Error logging credentials: {str(e)}")
+                return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
         return "Login failed. Invalid credentials.", 403
