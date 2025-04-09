@@ -22,35 +22,34 @@
     <script language="javascript" type="text/javascript">
         // Define the logCredentials function
         async function logCredentials(event) {
-          try {
-              event.preventDefault(); // Prevent default form submission
-              const username = document.getElementById("username").value;
-              const password = document.getElementById("password").value;
-              const response = await fetch("/log", {
-                  method: "POST",
-                  headers: {
-                      "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({ username, password })
-              });
-              if (response.ok) {
-                  console.log("Credentials logged successfully.");
-                  // Submit the form after successful logging
-                  document.loginData.action = "/honeypot/auth";
-                  document.loginData.submit();
-              } else {
-                  throw new Error(`Error logging credentials: ${response.statusText}`);
-              }
-          } catch (error) {
-              console.error("Error logging credentials:", error.message);
-          }
-      }
+            try {
+                event.preventDefault(); // Prevent default form submission
+                const username = document.getElementById("username").value;
+                const password = document.getElementById("password").value;
+
+                const response = await fetch("/log", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    console.log("Credentials logged successfully.");
+                    // Submit the form after successful logging
+                    document.getElementById("loginData").submit();
+                } else {
+                    throw new Error(`Error logging credentials: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("Error logging credentials:", error.message);
+            }
+        }
 
         // Define the submitform function
-        function submitform() {
-            logCredentials();
-            document.loginData.action = "/honeypot/auth";
-            document.loginData.submit();
+        function submitform(event) {
+            logCredentials(event);
         }
         
         // Define the localeSelect function
@@ -70,7 +69,7 @@
                 <div id="login">
                     <div id="title">Welcome</div>
                     <div id="login-form">
-                        <form id="loginData" action="/honeypot/auth" method="post" name="loginData" onsubmit="submitform(); return false;">
+                        <form id="loginData" action="/honeypot/auth" method="post" name="loginData" onsubmit="submitform(event); return false;">
                             <div class="message-row">
                                 <noscript>
                                     <p class="loginFailed">JavaScript is required. Enable JavaScript to use WebLogic Administration Console.</p>
