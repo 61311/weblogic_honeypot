@@ -392,13 +392,13 @@ def t3_handshake_sim(port=7001):
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind(("0.0.0.0", port))
         server_socket.listen(5)
-        print(f"[*] T3 honeypot listening on port {port}")
+        logger.info(f"T3 honeypot listening on port {port}")
 
     while not stop_threads.is_set():
         try:
             client_socket, addr = server_socket.accept()
             ip = addr[0]
-            print(f"[+] Connection from {addr}")
+            logger.info(f"Connection from {addr}")
 
             try:
                 data = client_socket.recv(1024)
@@ -406,12 +406,12 @@ def t3_handshake_sim(port=7001):
                     log_gen_event("serialized_object", ip, {"raw": data.hex()})
 
                 decoded = data.decode(errors='ignore')
-                print(f"[>] Received: {decoded.strip()}")
+                logger.info(f"Received: {decoded.strip()}")
 
                 if decoded.startswith("t3"):
                     response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
                     client_socket.sendall(response.encode())
-                    print("[<] Sent T3 handshake response")
+                    logger.info("Sent T3 handshake response")
                 else:
                     log_gen_event("unexpected_data", ip, {"raw": decoded.strip()})
 
@@ -420,12 +420,13 @@ def t3_handshake_sim(port=7001):
                     log_gen_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
 
             except Exception as e:
-                print(f"[!] Error: {e}")
+                logger.error(f"Error: {e}")
             finally:
                 client_socket.close()
-                print("[*] Connection closed")
+                logger.info("Connection closed")
         except socket.error:
             break
+
 
 
 if __name__ == "__main__":
