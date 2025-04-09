@@ -75,9 +75,9 @@ exploit_logger.addHandler(exploit_handler)
 
 t3_logger = logging.getLogger('t3_events')
 t3_logger.setLevel(logging.INFO)
-t3_handler = logging.FileHandler(t3_events_log_file)
+t3_handler = logging.FileHandler(exploit_events_log_file)
 t3_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-t3_logger.addHandler(t3_handler)
+t3_logger.addHandler(t3_handler_handler)
 
 # Function to log system events
 
@@ -114,7 +114,6 @@ class EventType:
 
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
-# Exploit dictionary
 exploit_dict = [
     {
         "exploit": "CVE-2025-21549",
@@ -122,7 +121,8 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Server is ready",
         "response_status": 200,
-        "headers": {}
+        "headers": {},
+        "description": "WebLogic readiness check endpoint."
     },
     {
         "exploit": "CVE-2020-14750",
@@ -130,7 +130,8 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Unauthorized access",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Unauthenticated remote code execution via path traversal."
     },
     {
         "exploit": "CVE-2020-14882",
@@ -138,7 +139,8 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Unauthorized access",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Path traversal vulnerability allowing unauthenticated remote code execution."
     },
     {
         "exploit": "CVE-2023-21839",
@@ -146,7 +148,8 @@ exploit_dict = [
         "method": "['POST']",
         "response": "Internal Server Error",
         "response_status": 500,
-        "headers": {}
+        "headers": {},
+        "description": "Remote code execution vulnerability in WebLogic asynchronous service."
     },
     {
         "exploit": "CVE-2024-20931",
@@ -154,39 +157,89 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Forbidden",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Access control vulnerability in WebLogic console."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2019-2725",
         "exploit_path": "/wls-wsat/CoordinatorPortType",
         "method": "['POST']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Deserialization vulnerability allowing remote code execution."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2019-2729",
         "exploit_path": "/wls-wsat/RegistrationPortTypeRPC",
         "method": "['POST']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Deserialization vulnerability allowing remote code execution."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2019-2890",
         "exploit_path": "/bea_wls_internal/",
         "method": "['GET']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Remote code execution vulnerability in WebLogic internal endpoints."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2018-2894",
         "exploit_path": "/uddiexplorer/",
         "method": "['GET']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Directory traversal vulnerability in WebLogic UDDI Explorer."
+    },
+    {
+        "exploit": "CVE-2021-35587",
+        "exploit_path": "/oam/server/",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Authentication bypass vulnerability in Oracle Access Manager."
+    },
+    {
+        "exploit": "CVE-2023-21931",
+        "exploit_path": "/oamconsole/afr/a/remote/",
+        "method": "['GET']",
+        "response": "ADF_FACES-30200: Fatal exception during PhaseId: RESTORE_VIEW",
+        "response_status": 500,
+        "headers": {},
+        "description": "Remote code execution vulnerability in Oracle Access Manager."
+    },
+    {
+        "exploit": "CVE-2022-21510",
+        "exploit_path": "/oam/server/",
+        "method": "['GET']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Vulnerability in Oracle Access Manager allowing unauthenticated access to sensitive data."
+    },
+    {
+        "exploit": "CVE-2017-10271",
+        "exploit_path": "/wls-wsat/CoordinatorPortType",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "XMLDecoder deserialization vulnerability in WebLogic Server."
+    },
+    {
+        "exploit": "CVE-2018-2628",
+        "exploit_path": "/wls-wsat/CoordinatorPortType",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Remote code execution vulnerability in WebLogic Server due to unsafe deserialization."
     },
     {
         "exploit": "Exploit Attempt",
@@ -196,25 +249,87 @@ exploit_dict = [
         "response_status": 403,
         "headers": {}
     },
-        {
-        "exploit": "Exploit Attempt",
+    {
+        "exploit": "CVE-2020-14750",
         "exploit_path": "/OA_HTML/BneOfflineLOVService",
         "method": "['POST']",
         "response": '''<?xml version="1.0" encoding="UTF-8"?><bne:document xmlns:bne="http://www.oracle.com/bne"><bne:messages xmlns:bne="http://www.oracle.com/bne"><bne:message bne:type="ERROR" bne:text="Cannot be logged in as GUEST." bne:cause="" bne:action="" /></bne:messages></bne:document>''',
         "response_status": 200,
-        "headers": {}
+        "headers": {},
+        "description": "Oracle E-Business Suite vulnerability allowing unauthorized access."
     },
         {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2021-35587",
         "exploit_path": "/oamconsole/afr/a/remote/",
         "method": "['GET']",
         "response": "ADF_FACES-30200:For more information, please see the server&#39;s error log for an entry beginning with: The UIViewRoot is null. Fatal exception during PhaseId: RESTORE_VIEW 1.",
         "response_status": 500,
-        "headers": {}
-        }
-]
-
-
+        "headers": {},
+        "description": "Authentication bypass vulnerability in Oracle Access Manager."
+        },
+    {
+        "exploit": "CVE-2020-2586",
+        "exploit_path": "/OA_HTML/BneApplicationService",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Unauthenticated access to sensitive data in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2020-2587",
+        "exploit_path": "/OA_HTML/BneWebService",
+        "method": "['POST']",
+        "response": "Internal Server Error",
+        "response_status": 500,
+        "headers": {},
+        "description": "Remote code execution vulnerability in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2019-2638",
+        "exploit_path": "/OA_HTML/BneUploaderService",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Unauthenticated access to sensitive data in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2018-2893",
+        "exploit_path": "/OA_HTML/BneOfflineLOVService",
+        "method": "['POST']",
+        "response": '''<?xml version="1.0" encoding="UTF-8"?><bne:document xmlns:bne="http://www.oracle.com/bne"><bne:messages xmlns:bne="http://www.oracle.com/bne"><bne:message bne:type="ERROR" bne:text="Cannot be logged in as GUEST." bne:cause="" bne:action="" /></bne:messages></bne:document>''',
+        "response_status": 200,
+        "headers": {},
+        "description": "Directory traversal vulnerability in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2021-2295",
+        "exploit_path": "/OA_HTML/BneDataService",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "SQL injection vulnerability in Oracle E-Business Suite."
+    },
+        {
+        "exploit": "JSPSpy Webshell",
+        "exploit_path": "/x.jsp",
+        "method": "['GET', 'POST']",
+        "response": "JSPSpy Webshell is ready.",
+        "response_status": 200,
+        "headers": {},
+        "description": "Emulated JSPSpy webshell endpoint."
+    },
+    {
+        "exploit": "China Chopper Webshell",
+        "exploit_path": "/aa.jsp",
+        "method": "['POST']",
+        "response": "Success",
+        "response_status": 200,
+        "headers": {},
+        "description": "Emulated China Chopper webshell endpoint."
+    }]
 # Random delay to evade fingerprinting  
 def random_delay():  
     time.sleep(random.uniform(0.5, 2.5))  
@@ -269,7 +384,7 @@ def save_payload(ip, data):
         filename = f"payloads/{ip}_{int(time.time())}.txt"  
         with open(filename, "w") as f:  
             json.dump(data, f, indent=4)  
-        system_logger(f"[PAYLOAD SAVED] {filename}")
+        logging.info(f"[PAYLOAD SAVED] {filename}")
 
 def get_geoip(ip_address):
     geo_info = {}
@@ -306,23 +421,23 @@ def get_geoip(ip_address):
 
 def log_mal_event(event_type, ip, details):
     log_entry = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
-        "event_type": event_type,
-        "source_ip": ip,
-        "geoip": get_geoip(ip),
-        "details": details
-    }
-    exploit_logger.info(json.dumps(log_entry))
-        
-def log_gen_event(event_type, ip, details):
-    log_entry = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "event_type": event_type,
         "source_ip": ip,
         "geoip": get_geoip(ip),
         "details": details
     }
     general_logger.info(json.dumps(log_entry))
+        
+def log_gen_event(event_type, ip, details):
+    log_entry = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "event_type": event_type,
+        "source_ip": ip,
+        "geoip": get_geoip(ip),
+        "details": details
+    }
+    exploit_logger.info(json.dumps(log_entry))
 
 
 # Processing of Request/Response
@@ -365,7 +480,6 @@ def process_input(path: str, request: Request) -> Response:
     headers = dict(request.headers)
     payload_data = extract_payload(request)
     log_gen_event("General Event Record", ip, {
-        "path": request.path,
         "payload": payload_data,
         "headers": headers,
         "user_agent": user_agent
@@ -373,7 +487,7 @@ def process_input(path: str, request: Request) -> Response:
     save_payload(ip, payload_data)
     directory_path = 'source/oam/pages'
     if not os.path.exists(directory_path):
-        system_logger.error(f"Directory not found: {directory_path}")
+        logger.error(f"Directory not found: {directory_path}")
         return Response("Internal Server Error: Directory not found", status=500)
     return send_from_directory(directory_path, 'login.html')
 
@@ -407,10 +521,11 @@ for port, app in apps.items():
             event_details = f"Captured credentials - Username: {username}, Password: {password}"
 
             log_gen_event("credential_capture", ip, event_details)
+            logger.info(f"Captured credentials from {ip}: {event_details}")
 
             return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
         except Exception as e:
-            log_gen_event(f"Error logging credentials: {str(e)}")
+            logger.error(f"Error logging credentials: {str(e)}")
             return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
@@ -424,6 +539,29 @@ for port, app in apps.items():
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         return send_from_directory('source/oam/pages/js', filename)
+    @app.route('/a.txt', methods=['GET'])
+    def serve_a_txt():
+        """
+        Emulate a response for a.txt.
+        """
+        ip = request.remote_addr
+        user_agent = request.headers.get("User-Agent", "Unknown")
+
+        # Log the interaction
+        log_gen_event("a.txt Access", ip, {
+            "user_agent": user_agent,
+            "path": "/a.txt"
+        })
+
+        # Define the content of the text file
+        response_content = """# This is a simulated response for a.txt
+    # Honeypot interaction detected
+    # Timestamp: {}
+    # IP Address: {}
+    # User-Agent: {}
+    """.format(datetime.datetime.now(datetime.timezone.utc).isoformat(), ip, user_agent)
+    # Return the response
+        return Response(response_content, status=200, mimetype='text/plain')
     @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
     @app.route("/<path:path>", methods=["GET", "POST"])
     def catch_all(path):
@@ -455,32 +593,32 @@ def t3_handshake_sim(port=7001):
             try:
                 client_socket, addr = server_socket.accept()
                 ip = addr[0]
-                t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - connection", "ip": get_geoip(ip), "port": port})
+                t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - connection", "ip": get_geoip(ip), "port": port})
 
                 try:
                     data = client_socket.recv(1024)
                     if b"\xac\xed\x00\x05" in data:
-                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data": data.hex()})
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data": data.hex()})
 
                     decoded = data.decode(errors='ignore')
 
                     if decoded.startswith("t3"):
                         response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
                         client_socket.sendall(response.encode())
-                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - sent_response", "ip": get_geoip(ip), "port": port})
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - sent_response", "ip": get_geoip(ip), "port": port})
 
                     else:
-                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - unexpected data", "ip": get_geoip(ip), "port": port})
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - unexpected data", "ip": get_geoip(ip), "port": port})
 
                     payload = client_socket.recv(4096)
                     if payload:
-                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data":  payload.decode(errors='ignore')})
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data":  payload.decode(errors='ignore')})
 
                 except Exception as e:
                     log_system_event(f"T3 Error Error: {e}")
                 finally:
                     client_socket.close()
-                    t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - disconnection", "ip": get_geoip(ip), "port": port})
+                    t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - disconnection", "ip": get_geoip(ip), "port": port})
 
             except socket.error:
                 break
