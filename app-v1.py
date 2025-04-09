@@ -395,7 +395,7 @@ def t3_handshake_sim(port=7001):
             try:
                 data = client_socket.recv(1024)
                 if b"\xac\xed\x00\x05" in data:
-                    log_event("serialized_object", ip, {"raw": data.hex()})
+                    logger("serialized_object", ip, {"raw": data.hex()})
 
                 decoded = data.decode(errors='ignore')
                 print(f"[>] Received: {decoded.strip()}")
@@ -405,11 +405,11 @@ def t3_handshake_sim(port=7001):
                     client_socket.sendall(response.encode())
                     print("[<] Sent T3 handshake response")
                 else:
-                    log_event("unexpected_data", ip, {"raw": decoded.strip()})
+                    logger("unexpected_data", ip, {"raw": decoded.strip()})
 
                 payload = client_socket.recv(4096)
                 if payload:
-                    log_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
+                    logger("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
 
             except Exception as e:
                 print(f"[!] Error: {e}")
