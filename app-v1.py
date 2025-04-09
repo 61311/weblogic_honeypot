@@ -253,9 +253,7 @@ def log_mal_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypot_mal_events.json", "a") as log_file:
-        json.dump(log_entry, log_file)
-        log_file.write("\n")
+    logger.info(f"Malicious Event: {json.dumps(log_entry)}")
         
 def log_gen_event(event_type, ip, details):
     log_entry = {
@@ -265,9 +263,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypot_gen_events.json", "a") as log_file:
-        json.dump(log_entry, log_file)
-        log_file.write("\n")
+    logger.info(f"General Event: {json.dumps(log_entry)}")
 
 
 # Processing of Request/Response
