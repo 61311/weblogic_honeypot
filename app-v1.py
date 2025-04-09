@@ -329,12 +329,12 @@ def serve_index():
 
 # Flask app initialization
 apps = {
-    80: Flask("weblogic_80"),
+    8080: Flask("weblogic_8080"),
     8000: Flask("weblogic_8000"),
     8001: Flask("weblogic_8001"),
     14100: Flask("weblogic_14100"),
     14000: Flask("weblogic_14000"),
-    443: Flask("weblogic_443"),
+    8443: Flask("weblogic_8443"),
     14101: Flask("weblogic_14101")
 }
 
@@ -434,7 +434,7 @@ def t3_handshake_sim(port=7001):
 
 if __name__ == "__main__":
     for port, app in apps.items():
-        use_ssl = (port == 443)  # Use SSL only on port 443
+        use_ssl = (port == 8443)  # Use SSL only on port 443
         threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
 
     t3_thread = threading.Thread(target=t3_handshake_sim, args=(7001,))
