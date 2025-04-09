@@ -14,9 +14,11 @@ import time
 import random
 import logging
 
+
 # - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
 # - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
 
+stop_threads = threading.Event()
 
 '''
 sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3
@@ -58,6 +60,14 @@ WEBLOGIC_HEADERS = {
     "X-XSS-Protection": "1;mode=block",
     "X-Frame-Options": "SAMEORIGIN"
 }
+
+# Event Types
+class EventType:
+    GENERAL_EVENT_RECORD = "General Event Record"
+    CREDENTIAL_CAPTURE = "credential_capture"
+    SERIALIZED_OBJECT = "serialized_object"
+    UNEXPECTED_DATA = "unexpected_data"
+    T3_PAYLOAD = "t3_payload"
 
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
@@ -293,23 +303,25 @@ def process_input(path: str, request: Request) -> Response:
         print(path)
         print(request.data.decode(errors='ignore'))
         
-        if path == exploit["exploit_path"] and request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+        if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
     
     # If no exploit is matched, log a general event and serve the index.html file
     ip = request.remote_addr
-    request_data = request.data.decode(errors='ignore')
     user_agent = request.headers.get("User-Agent", "Unknown")
     headers = dict(request.headers)
     payload_data = extract_payload(request)
     log_gen_event("General Event Record", ip, {
-        "path": request.path,
-        "payload": request_data,
+        "payload": payload_data,
         "headers": headers,
         "user_agent": user_agent
     })
     save_payload(ip, payload_data)
-    return send_from_directory('source/oam/pages', 'login.html')
+    directory_path = 'source/oam/pages'
+    if not os.path.exists(directory_path):
+        logger.error(f"Directory not found: {directory_path}")
+        return Response("Internal Server Error: Directory not found", status=500)
+    return send_from_directory(directory_path, 'login.html')
 
 # Routes
 def serve_index():
@@ -317,6 +329,7 @@ def serve_index():
 
 # Flask app initialization
 apps = {
+    80: Flask("weblogic_80"),
     8000: Flask("weblogic_8000"),
     8001: Flask("weblogic_8001"),
     14100: Flask("weblogic_14100"),
@@ -327,12 +340,28 @@ apps = {
 
 # Unified route for all apps
 for port, app in apps.items():
-    @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
-    @app.route("/<path:path>", methods=["GET", "POST"])
-    def catch_all(path):
-        if path == "" or path == "/":
-            return serve_index()
-        return process_input(path, request)
+    @app.route('/log', methods=['POST'])
+    def log_credentials():
+        try:
+            data = request.get_json()
+            if not data or 'username' not in data or 'password' not in data:
+                return jsonify({'status': 'error', 'message': 'Invalid request data'}), 400
+
+            username = data['username']
+            password = data['password']
+            ip = request.remote_addr
+            event_details = f"Captured credentials - Username: {username}, Password: {password}"
+
+            log_gen_event("credential_capture", ip, event_details)
+            logger.info(f"Captured credentials from {ip}: {event_details}")
+
+            return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
+        except Exception as e:
+            logger.error(f"Error logging credentials: {str(e)}")
+            return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
+    @app.route('/honeypot/auth', methods=['POST'])
+    def honeypot_auth():
+        return "Login failed. Invalid credentials.", 403
     @app.route('/images/<path:filename>')
     def serve_image(filename):
         return send_from_directory('source/oam/pages/images', filename)
@@ -342,25 +371,14 @@ for port, app in apps.items():
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         return send_from_directory('source/oam/pages/js', filename)
-    @app.route('/log', methods=['POST'])
-    def log_credentials():
-        try:
-            data = request.get_json()
-            username = data.get('username')
-            password = data.get('password')
-            ip = request.remote_addr
-            event_details = f"Captured credentials - Username: {username}, Password: {password}"
-            
-            # Use the existing logging function to log as a general event
-            log_gen_event("credential_capture", ip, event_details)
+    @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
+    @app.route("/<path:path>", methods=["GET", "POST"])
+    def catch_all(path):
+        if path == "" or path == "/":
+            return serve_index()
+        return process_input(path, request)
 
-            return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
-        except Exception as e:
-            logger.error(f"Error logging credentials: {str(e)}")
-            return jsonify({'status': 'error', 'message': str(e)}), 500
-    @app.route('/honeypot/auth', methods=['POST'])
-    def honeypot_auth():
-        return "Login failed. Invalid credentials.", 403
+
 
 
 
@@ -380,7 +398,8 @@ def t3_handshake_sim(port=7001):
         server_socket.listen(5)
         print(f"[*] T3 honeypot listening on port {port}")
 
-        while True:
+    while not stop_threads.is_set():
+        try:
             client_socket, addr = server_socket.accept()
             ip = addr[0]
             print(f"[+] Connection from {addr}")
@@ -388,7 +407,7 @@ def t3_handshake_sim(port=7001):
             try:
                 data = client_socket.recv(1024)
                 if b"\xac\xed\x00\x05" in data:
-                    log_event("serialized_object", ip, {"raw": data.hex()})
+                    log_gen_event("serialized_object", ip, {"raw": data.hex()})
 
                 decoded = data.decode(errors='ignore')
                 print(f"[>] Received: {decoded.strip()}")
@@ -398,20 +417,33 @@ def t3_handshake_sim(port=7001):
                     client_socket.sendall(response.encode())
                     print("[<] Sent T3 handshake response")
                 else:
-                    log_event("unexpected_data", ip, {"raw": decoded.strip()})
+                    log_gen_event("unexpected_data", ip, {"raw": decoded.strip()})
 
                 payload = client_socket.recv(4096)
                 if payload:
-                    log_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
+                    log_gen_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
 
             except Exception as e:
                 print(f"[!] Error: {e}")
             finally:
                 client_socket.close()
                 print("[*] Connection closed")
+        except socket.error:
+            break
+
 
 if __name__ == "__main__":
     for port, app in apps.items():
         use_ssl = (port == 443)  # Use SSL only on port 443
         threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
-    t3_handshake_sim(port=7001)
+
+    t3_thread = threading.Thread(target=t3_handshake_sim, args=(7001,))
+    t3_thread.daemon = False  # Set daemon to False to allow joining
+    t3_thread.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        stop_threads.set()
+        t3_thread.join()

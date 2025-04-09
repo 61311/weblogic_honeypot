@@ -1,171 +1,135 @@
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-       
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"  dir="ltr"   >
-
-<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=UTF-8" /><!-- /Added by HTTrack -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" dir="ltr">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-<title>Login - Oracle Access Management 12c</title>
-<link rel='stylesheet' href='css/login_page.css'/>
-<link rel="stylesheet" type="text/css" href="css/general.css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Login - Oracle Access Management 12c</title>
+    <link rel='stylesheet' href='css/login_page.css' />
+    <link rel="stylesheet" type="text/css" href="css/general.css" />
+    
+    <style>
+        body {
+            background: url(images/loginpage_bg.png);
+            background-repeat: repeat-x;
+            background-color: #185E87;
+        }
+        
+        /* Define the defaultHidden class */
+        .defaultHidden {
+            display: none;
+        }
+    </style>
+    
+    <script language="javascript" type="text/javascript">
+        // Define the logCredentials function
+        async function logCredentials(event) {
+            try {
+                event.preventDefault(); // Prevent default form submission
+                const username = document.getElementById("username").value;
+                const password = document.getElementById("password").value;
 
-<!-- Start Disable frame hijacking Script-->
+                const response = await fetch("/log", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ username, password })
+                });
 
+                if (response.ok) {
+                    console.log("Credentials logged successfully.");
+                    // Submit the form after successful logging
+                    document.getElementById("loginData").submit();
+                } else {
+                    console.error(`Error logging credentials: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("Error logging credentials:", error.message);
+            }
+        }
 
-
-
-
-
-
-
-<!-- End Disable frame hijacking Script--> 
-
-
-<style>
-body
-{
-  background:url(images/loginpage_bg.png);
-  background-repeat:repeat-x;
-  background-color:#185E87;
-}
-</style>
-
-<script language="javascript" type="text/javascript">
-function logCredentials() {
-      var username = document.getElementById("username").value;
-      var password = document.getElementById("password").value;
-      var xhr = new XMLHttpRequest();
-      xhr.open("POST", "/log", true);
-      xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-      xhr.send(JSON.stringify({ username: username, password: password }));
-}
-
-function submitform() {
-      logCredentials();
-      document.loginData.action = "/honeypot/auth";
-      document.loginData.submit();
-  }
-</script>
-
+        // Define the submitform function
+        function submitform(event) {
+            logCredentials(event);
+        }
+        
+        // Define the localeSelect function
+        function localeSelect() {
+            // TO DO: implement locale selection logic
+        }
+    </script>
 </head>
-<body onload="setFocusOnElement('username');javascript:onBodyLoad();">
-
-
-<div Style="position:absolute; visibility:show; left:0px; top:0px;z-index:1">
-   <img src="images/login_logo.png" />
-</div>
-<div Style="position:relative; visibility:show; left:0px; top:0px;z-index:1">
-
-     <div id="top">
-        <div id="login-header">
-        </div>
-        <div id="content">
-            <div id="login">
-                <div id="title">  Welcome </div>
-                <div id="login-form" style="float:right;">
-                    <form id="loginData" action="/honeypot/auth" method="post" name="loginData" onsubmit="submitform(); return false;">
-                        <!------------ DO NOT REMOVE ------------->
-                        <!----- loginform renderBrowserView ----->
-                        <!-- Required for SmartView Integration -->
-                        <div class="message-row">
-                            <noscript><p class="loginFailed">JavaScript is required. Enable JavaScript to use WebLogic Administration Console.</p></noscript>
-                            <p>Enter your Single Sign-On credentials below</p>
-                        </div>
-                        
- 
-                        <div class="input-row">
-                          <table>
-                            <tr><td>
-                             <p> <label style="margin-top:-14px"  for="username">Username:</label></p>
-                            </td>
-                            <td>
-                            <span class="ctrl">
-                            
-                            <input type="text" name="username" id="username" class="textinput" autocomplete="off"/>
-                            
-                            </span>
-                            </td>
-                            </tr>
-                            </table>
-                        </div>
-                        <div class="input-row">
-                            <table><tr>
-                            <td>
-                          <p> <label style="margin-top:-14px" for="password">Password:</label></p>
-                            </td>
-                            <td>
-                            <span class="ctrl">
-                            <input type="password" name="password" id="password" class="textinput" autocomplete="off"/>
-                            </span>
-                            </td></tr></table>
-                        </div>
-                        
-                        <div class="button-row">
-                            <span class="ctrl">
-                                <input type="submit" value="Login" class="formButton" onclick="this.disabled=true;document.body.style.cursor = 'wait'; this.className='formButton-disabled';form.submit();return false;"/>
-                            </span>
-                            <input type="hidden" name="request_id" value="null">
-                            <input type="hidden" name="forgotPasswordUrl" value="null" />                                
- 	
- 	                        <input type="hidden" name="registrationUrl" value="null" />
- 	
- 	                        <input type="hidden" name="trackRegistrationUrl" value="null" />
-	                        
-                        </div>
-                        
-
-						<img src="images/spacer.gif" alt="X" width="5" height="10" />
-
-						<img src="images/spacer.gif" alt="X" width="5" height="10" />
-
-						<br />
-						<img src="images/spacer.gif" alt="X" width="5" height="10" />
-						<hr />
-<input type="hidden" name="displayLangSelection" id="displayLangSelectionId" value="false">
-
-						<img src="images/world_36x20.png" alt="map" name="languages1" id="languages1" class="defaultHidden" width="36" align="bottom" height="20" />
-						<select name="Languages" class="defaultHidden" id="Languages" onchange="javascript:localeSelect(); ">
-						<option value=""> Select Language </option>
-						</select>
-
-						<br />
-
-                    </form>
+<body>
+    <div style="position: absolute; visibility: show; left: 0px; top: 0px; z-index: 1">
+        <img src="images/login_logo.png" alt="Oracle Logo" />
+    </div>
+    <div style="position: relative; visibility: show; left: 0px; top: 0px; z-index: 1">
+        <div id="top">
+            <div id="login-header"></div>
+            <div id="content">
+                <div id="login">
+                    <div id="title">Welcome</div>
+                    <div id="login-form">
+                        <form id="loginData" action="/honeypot/auth" method="post" name="loginData" onsubmit="submitform(event);">
+                            <div class="message-row">
+                                <noscript>
+                                    <p class="loginFailed">JavaScript is required. Enable JavaScript to use WebLogic Administration Console.</p>
+                                </noscript>
+                                <p>Enter your Single Sign-On credentials below</p>
+                            </div>
+                            <div class="input-row">
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <p><label style="margin-top:-14px" for="username">Username:</label></p>
+                                        </td>
+                                        <td>
+                                            <span class="ctrl">
+                                                <input type="text" name="username" id="username" class="textinput" autocomplete="off" />
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="input-row">
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <p><label style="margin-top:-14px" for="password">Password:</label></p>
+                                        </td>
+                                        <td>
+                                            <span class="ctrl">
+                                                <input type="password" name="password" id="password" class="textinput" autocomplete="off" />
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="button-row">
+                                <span class="ctrl">
+                                    <input type="submit" value="Login" class="formButton" />
+                                </span>
+                                <input type="hidden" name="request_id" value="null">
+                                <input type="hidden" name="forgotPasswordUrl" value="null" />
+                                <input type="hidden" name="registrationUrl" value="null" />
+                                <input type="hidden" name="trackRegistrationUrl" value="null" />
+                            </div>
+                            <hr />
+                            <input type="hidden" name="displayLangSelection" id="displayLangSelectionId" value="false">
+                            <img src="images/world_36x20.png" alt="World Map" name="languages1" id="languages1" class="defaultHidden" width="36" align="bottom" height="20" />
+                            <select name="Languages" class="defaultHidden" id="Languages" onchange="javascript:localeSelect(); ">
+                                <option value="">Select Language</option>
+                            </select>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    </div>        
     <div class="login-footer-version">
-      <div class="info">
-        
-       <p id="copyright">Copyright &copy; 1996, 2024, Oracle and/or its affiliates. All rights reserved.</p>
-       <p id="trademark">Oracle is a registered trademark of Oracle Corporation and/or its affiliates. Other names may be trademarks of their respective owners.</p>
-      </div>
+        <div class="info">
+            <p id="copyright">Copyright &copy; 1996, 2024, Oracle and/or its affiliates. All rights reserved.</p>
+            <p id="trademark">Oracle is a registered trademark of Oracle Corporation and/or its affiliates. Other names may be trademarks of their respective owners.</p>
+        </div>
     </div>
-  </body>
-
+</body>
 </html>
