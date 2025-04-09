@@ -356,7 +356,9 @@ for port, app in apps.items():
         except Exception as e:
             logger.error(f"Error logging credentials: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
-
+    @app.route('/honeypot/auth', methods=['POST'])
+    def honeypot_auth():
+        return "Login failed. Invalid credentials.", 403
 
 
 
