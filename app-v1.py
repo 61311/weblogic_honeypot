@@ -14,9 +14,11 @@ import time
 import random
 import logging
 
+
 # - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
 # - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
 
+stop_threads = threading.Event()
 
 '''
 sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3
@@ -390,13 +392,14 @@ def run_flask_app(app, port, use_ssl=False):
         app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 def t3_handshake_sim(port=7001):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server_socket.bind(("0.0.0.0", port))
-            server_socket.listen(5)
-            print(f"[*] T3 honeypot listening on port {port}")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.bind(("0.0.0.0", port))
+        server_socket.listen(5)
+        print(f"[*] T3 honeypot listening on port {port}")
 
-        while True:
+    while not stop_threads.is_set():
+        try:
             client_socket, addr = server_socket.accept()
             ip = addr[0]
             print(f"[+] Connection from {addr}")
@@ -425,9 +428,22 @@ def t3_handshake_sim(port=7001):
             finally:
                 client_socket.close()
                 print("[*] Connection closed")
+        except socket.error:
+            break
+
 
 if __name__ == "__main__":
     for port, app in apps.items():
         use_ssl = (port == 443)  # Use SSL only on port 443
         threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
-    threading.Thread(target=t3_handshake_sim, args=(7001,), daemon=True).start()
+
+    t3_thread = threading.Thread(target=t3_handshake_sim, args=(7001,))
+    t3_thread.daemon = False  # Set daemon to False to allow joining
+    t3_thread.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        stop_threads.set()
+        t3_thread.join()
