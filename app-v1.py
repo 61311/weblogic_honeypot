@@ -293,7 +293,7 @@ def process_input(path: str, request: Request) -> Response:
         print(path)
         print(request.data.decode(errors='ignore'))
         
-        if path == exploit["exploit_path"] and request.method in exploit["method"].strip("[]").replace("'", "").split(','):
+        if path == exploit["exploit_path"]:
             return handle_exploit(exploit)
     
     # If no exploit is matched, log a general event and serve the index.html file
