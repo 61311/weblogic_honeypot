@@ -43,9 +43,52 @@ WantedBy=multi-user.target'''
 
 log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, 'honeypot.log')
-logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('honeypot')
+
+# Log file paths
+system_log_file = os.path.join(log_dir, 'system.log')
+general_events_log_file = os.path.join(log_dir, 'general_events.log')
+exploit_events_log_file = os.path.join(log_dir, 'exploit_events.log')
+t3_events_log_file = os.path.join(log_dir, 't3_events.log')
+
+# Configure system logger
+system_logger = logging.getLogger('system')
+system_logger.setLevel(logging.INFO)
+system_handler = logging.FileHandler(system_log_file)
+system_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+system_logger.addHandler(system_handler)
+
+# Configure general events logger
+general_logger = logging.getLogger('general_events')
+general_logger.setLevel(logging.INFO)
+general_handler = logging.FileHandler(general_events_log_file)
+general_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+general_logger.addHandler(general_handler)
+
+# Configure exploit events logger
+exploit_logger = logging.getLogger('exploit_events')
+exploit_logger.setLevel(logging.INFO)
+exploit_handler = logging.FileHandler(exploit_events_log_file)
+exploit_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+exploit_logger.addHandler(exploit_handler)
+
+# Configure T3 events logger
+
+t3_logger = logging.getLogger('t3_events')
+t3_logger.setLevel(logging.INFO)
+t3_handler = logging.FileHandler(exploit_events_log_file)
+t3_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+t3_logger.addHandler(t3_handler_handler)
+
+# Function to log system events
+
+def log_system_event(message, level='info'):
+    if level == 'info':
+        system_logger.info(message)
+    elif level == 'error':
+        system_logger.error(message)
+    elif level == 'warning':
+        system_logger.warning(message)
+
 
 # Constants
 WEBLOGIC_HEADERS = {
@@ -269,9 +312,7 @@ def log_mal_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypot_mal_events.json", "a") as log_file:
-        json.dump(log_entry, log_file)
-        log_file.write("\n")
+    general_logger.info(json.dumps(log_entry))
         
 def log_gen_event(event_type, ip, details):
     log_entry = {
@@ -281,9 +322,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypot_gen_events.json", "a") as log_file:
-        json.dump(log_entry, log_file)
-        log_file.write("\n")
+    exploit_logger.info(json.dumps(log_entry))
 
 
 # Processing of Request/Response
@@ -319,6 +358,7 @@ def process_input(path: str, request: Request) -> Response:
         if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
     
+
     # If no exploit is matched, log a general event and serve the index.html file
     ip = request.remote_addr
     user_agent = request.headers.get("User-Agent", "Unknown")
@@ -409,38 +449,39 @@ def t3_handshake_sim(port=7001):
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind(("0.0.0.0", port))
         server_socket.listen(5)
-        print(f"[*] T3 honeypot listening on port {port}")
+        log_system_event(f"[*] T3 honeypot listening on port {port}")
 
         while not stop_threads.is_set():
             try:
                 client_socket, addr = server_socket.accept()
                 ip = addr[0]
-                print(f"[+] Connection from {addr}")
+                t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - connection", "ip": get_geoip(ip), "port": port})
 
                 try:
                     data = client_socket.recv(1024)
                     if b"\xac\xed\x00\x05" in data:
-                        log_gen_event("serialized_object", ip, {"raw": data.hex()})
+                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data": data.hex()})
 
                     decoded = data.decode(errors='ignore')
-                    print(f"[>] Received: {decoded.strip()}")
 
                     if decoded.startswith("t3"):
                         response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
                         client_socket.sendall(response.encode())
-                        print("[<] Sent T3 handshake response")
+                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - sent_response", "ip": get_geoip(ip), "port": port})
+
                     else:
-                        log_gen_event("unexpected_data", ip, {"raw": decoded.strip()})
+                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - unexpected data", "ip": get_geoip(ip), "port": port})
 
                     payload = client_socket.recv(4096)
                     if payload:
-                        log_gen_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
+                        t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data":  payload.decode(errors='ignore')})
 
                 except Exception as e:
-                    print(f"[!] Error: {e}")
+                    log_system_event(f"T3 Error Error: {e}")
                 finally:
                     client_socket.close()
-                    print("[*] Connection closed")
+                    t3_logger.info({"timestamp": datetime.datetime.utcnow().isoformat(),"event_type": "t3 protocol - disconnection", "ip": get_geoip(ip), "port": port})
+
             except socket.error:
                 break
 
