@@ -328,7 +328,6 @@ apps = {
 
 # Unified route for all apps
 for port, app in apps.items():
-
     @app.route('/log', methods=['POST'])
     def log_credentials():
         try:
@@ -399,7 +398,7 @@ def t3_handshake_sim(port=7001):
             try:
                 data = client_socket.recv(1024)
                 if b"\xac\xed\x00\x05" in data:
-                    logger("serialized_object", ip, {"raw": data.hex()})
+                    log_gen_event("serialized_object", ip, {"raw": data.hex()})
 
                 decoded = data.decode(errors='ignore')
                 print(f"[>] Received: {decoded.strip()}")
@@ -409,11 +408,11 @@ def t3_handshake_sim(port=7001):
                     client_socket.sendall(response.encode())
                     print("[<] Sent T3 handshake response")
                 else:
-                    logger("unexpected_data", ip, {"raw": decoded.strip()})
+                    log_gen_event("unexpected_data", ip, {"raw": decoded.strip()})
 
                 payload = client_socket.recv(4096)
                 if payload:
-                    logger("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
+                    log_gen_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
 
             except Exception as e:
                 print(f"[!] Error: {e}")
