@@ -1,0 +1,15 @@
+docker build -t weblogic-honeypot .
+
+docker run -d \
+  -p 8080:8080 \
+  -p 8000:8000 \
+  -p 8001:8001 \
+  -p 14100:14100 \
+  -p 14000:14000 \
+  -p 8443:8443 \
+  -p 14101:14101 \
+  -p 7001:7001 \
+  --name weblogic-honeypot \
+  weblogic-honeypot
+
+docker exec -it weblogic-honeypot ls /app/logs
