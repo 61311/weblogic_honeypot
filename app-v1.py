@@ -299,10 +299,7 @@ def process_input(path: str, request: Request) -> Response:
         random_delay()
         return response
     
-    for exploit in exploit_dict:
-        print(path)
-        print(request.data.decode(errors='ignore'))
-        
+    for exploit in exploit_dict:        
         if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
     
