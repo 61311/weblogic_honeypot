@@ -59,6 +59,14 @@ WEBLOGIC_HEADERS = {
     "X-Frame-Options": "SAMEORIGIN"
 }
 
+# Event Types
+class EventType:
+    GENERAL_EVENT_RECORD = "General Event Record"
+    CREDENTIAL_CAPTURE = "credential_capture"
+    SERIALIZED_OBJECT = "serialized_object"
+    UNEXPECTED_DATA = "unexpected_data"
+    T3_PAYLOAD = "t3_payload"
+
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
 # Exploit dictionary
@@ -295,21 +303,23 @@ def process_input(path: str, request: Request) -> Response:
         
         if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
-        else:
+    
     # If no exploit is matched, log a general event and serve the index.html file
-            ip = request.remote_addr
-            request_data = request.data.decode(errors='ignore')
-            user_agent = request.headers.get("User-Agent", "Unknown")
-            headers = dict(request.headers)
-            payload_data = extract_payload(request)
-            log_gen_event("General Event Record", ip, {
-                "path": request.path,
-                "payload": request_data,
-                "headers": headers,
-                "user_agent": user_agent
-            })
-            save_payload(ip, payload_data)
-            return send_from_directory('source/oam/pages', 'login.html')
+    ip = request.remote_addr
+    user_agent = request.headers.get("User-Agent", "Unknown")
+    headers = dict(request.headers)
+    payload_data = extract_payload(request)
+    log_gen_event("General Event Record", ip, {
+        "payload": payload_data,
+        "headers": headers,
+        "user_agent": user_agent
+    })
+    save_payload(ip, payload_data)
+    directory_path = 'source/oam/pages'
+    if not os.path.exists(directory_path):
+        logger.error(f"Directory not found: {directory_path}")
+        return Response("Internal Server Error: Directory not found", status=500)
+    return send_from_directory(directory_path, 'login.html')
 
 # Routes
 def serve_index():
@@ -380,11 +390,11 @@ def run_flask_app(app, port, use_ssl=False):
         app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 def t3_handshake_sim(port=7001):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket.bind(("0.0.0.0", port))
-        server_socket.listen(5)
-        print(f"[*] T3 honeypot listening on port {port}")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server_socket.bind(("0.0.0.0", port))
+            server_socket.listen(5)
+            print(f"[*] T3 honeypot listening on port {port}")
 
         while True:
             client_socket, addr = server_socket.accept()

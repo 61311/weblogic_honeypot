@@ -40,7 +40,7 @@
                     // Submit the form after successful logging
                     document.getElementById("loginData").submit();
                 } else {
-                    throw new Error(`Error logging credentials: ${response.statusText}`);
+                    console.error(`Error logging credentials: ${response.statusText}`);
                 }
             } catch (error) {
                 console.error("Error logging credentials:", error.message);
@@ -60,7 +60,7 @@
 </head>
 <body>
     <div style="position: absolute; visibility: show; left: 0px; top: 0px; z-index: 1">
-        <img src="images/login_logo.png" />
+        <img src="images/login_logo.png" alt="Oracle Logo" />
     </div>
     <div style="position: relative; visibility: show; left: 0px; top: 0px; z-index: 1">
         <div id="top">
@@ -69,7 +69,7 @@
                 <div id="login">
                     <div id="title">Welcome</div>
                     <div id="login-form">
-                        <form id="loginData" action="/honeypot/auth" method="post" name="loginData" onsubmit="submitform(event); return false;">
+                        <form id="loginData" action="/honeypot/auth" method="post" name="loginData" onsubmit="submitform(event);">
                             <div class="message-row">
                                 <noscript>
                                     <p class="loginFailed">JavaScript is required. Enable JavaScript to use WebLogic Administration Console.</p>
@@ -106,7 +106,7 @@
                             </div>
                             <div class="button-row">
                                 <span class="ctrl">
-                                    <input type="submit" value="Login" class="formButton" onclick="this.disabled=true;document.body.style.cursor = 'wait'; this.className='formButton-disabled';form.submit();return false;" />
+                                    <input type="submit" value="Login" class="formButton" />
                                 </span>
                                 <input type="hidden" name="request_id" value="null">
                                 <input type="hidden" name="forgotPasswordUrl" value="null" />
@@ -115,7 +115,7 @@
                             </div>
                             <hr />
                             <input type="hidden" name="displayLangSelection" id="displayLangSelectionId" value="false">
-                            <img src="images/world_36x20.png" alt="map" name="languages1" id="languages1" class="defaultHidden" width="36" align="bottom" height="20" />
+                            <img src="images/world_36x20.png" alt="World Map" name="languages1" id="languages1" class="defaultHidden" width="36" align="bottom" height="20" />
                             <select name="Languages" class="defaultHidden" id="Languages" onchange="javascript:localeSelect(); ">
                                 <option value="">Select Language</option>
                             </select>
