@@ -329,15 +329,6 @@ exploit_dict = [
         "response_status": 200,
         "headers": {},
         "description": "Emulated China Chopper webshell endpoint."
-    },
-        {
-        "exploit": "A.txt In Root Path",
-        "exploit_path": "/a.txt",
-        "method": "['GET']",
-        "response": "Success",
-        "response_status": 200,
-        "headers": {},
-        "description": "Emulated Compromised Host with Attacker File."
     }]
 # Random delay to evade fingerprinting  
 def random_delay():  
@@ -436,7 +427,7 @@ def log_mal_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    exploit_logger.info(json.dumps(log_entry))
+    general_logger.info(json.dumps(log_entry))
         
 def log_gen_event(event_type, ip, details):
     log_entry = {
@@ -446,7 +437,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    general_logger.info(json.dumps(log_entry))
+    exploit_logger.info(json.dumps(log_entry))
 
 
 # Processing of Request/Response

@@ -1,0 +1,260 @@
+/*
+    Styles for the login page and other standalone pages (pages outside the
+    control of Portal)
+*/
+
+.float-container {
+    overflow: hidden;
+    width: 100%;
+}
+
+#content {
+    overflow: hidden;
+    width: 100%;
+}
+
+#login-header {
+    height: 89px;
+}
+
+#login-header img {
+    margin-top: 20px;
+    margin-left: 25px;
+}
+
+#header {
+    padding-bottom: 20px;
+}
+
+#login {
+    background: #185E87 url(../images/LoginContainer_bg.png) repeat top left;
+    padding: 7px 9px 7px;
+    float: right;
+    width: 320px;
+    margin-right: 52px;
+    margin-top: 60px;
+}
+
+#loginnobackground {
+    padding: 7px 9px 7px;
+    float: right;
+    width: 420px;
+    margin-right: 52px;
+    margin-top: 60px;
+}
+#qrcontainer {
+    width: 320px;
+    padding: 7px 9px 7px;
+    float: right;
+    margin-right: 52px;
+    margin-top: 60px;
+}
+#qrimg {
+    border: 0;
+    width: 100%;
+    height: auto;
+}
+
+
+#title {
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.input-row, .button-row {
+    overflow: hidden;
+    width: 100%;
+    padding-bottom: 4px;
+}
+
+#message .message-row {
+    padding: 4px 8px;
+}
+
+#message {
+    width: 630px;
+    margin: 0px auto;
+}
+
+#loginData {
+    padding: 8px;
+    margin: 0px;
+}
+
+.content {
+    padding: 8px;
+}
+
+.input-row label {
+    width: 11em;
+    float: left;
+    font-weight: bold;
+}
+
+.input-row .ctrl {
+    width: 10em;
+    float: left;
+}
+
+.button-row .ctrl{
+    float: right;
+}
+
+input, select, button {
+    margin: 1px;
+}
+
+.textinput {
+    border: 1px solid #B9B9B4;
+    padding: 1px 2px 1px 3px;
+}
+
+#username, #password {
+    width: 12em;
+}
+
+
+.login-footer .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-authpad .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-textpad .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-keypad .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-pinpad .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-register .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-challenge .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-generic .info p {
+    margin: 1px 0px;
+}
+
+.login-footer-version .info p {
+    margin: 1px 0px;
+}
+
+.login-footer {
+	color:#B2CBDB;
+	font-family:Tahoma,Verdana,Helvetica,sans-serif;
+	font-size:10px;
+	font-weight:normal;
+	margin-top:185px;
+	white-space: nowrap;
+}
+
+.login-footer-generic {
+        color:#B2CBDB;
+        font-family:Tahoma,Verdana,Helvetica,sans-serif;
+        font-size:10px;
+        font-weight:normal;
+        margin-top:235px;
+        white-space: nowrap;
+}
+
+.login-footer-version {
+        position: absolute;
+        top: 584px; /* length of background image */
+        color: #B2CBDB;
+        font-family: Tahoma,Verdana,Helvetica,sans-serif;
+        font-size: 10px;
+        font-weight: normal;
+        white-space: nowrap;
+}
+
+.login-footer-authpad {
+        color:#B2CBDB;
+        font-family:Tahoma,Verdana,Helvetica,sans-serif;
+        font-size:10px;
+        font-weight:normal;
+        margin-top:265px;
+        white-space: nowrap;
+}
+
+.login-footer-pinpad {
+        color:#B2CBDB;
+        font-family:Tahoma,Verdana,Helvetica,sans-serif;
+        font-size:10px;
+        font-weight:normal;
+        margin-top:20px;
+        white-space: nowrap;
+}
+
+.login-footer-textpad {
+        color:#B2CBDB;
+        font-family:Tahoma,Verdana,Helvetica,sans-serif;
+        font-size:10px;
+        font-weight:normal;
+        margin-top:20px;
+        white-space: nowrap;
+}
+
+.login-footer-keypad {
+        color:#B2CBDB;
+        font-family:Tahoma,Verdana,Helvetica,sans-serif;
+        font-size:10px;
+        font-weight:normal;
+        margin-top:90px;
+        white-space: nowrap;
+}
+
+.login-footer-register {
+        color:#B2CBDB;
+        font-family:Tahoma,Verdana,Helvetica,sans-serif;
+        font-size:10px;
+        font-weight:normal;
+        margin-top:40px;
+        white-space: nowrap;
+}
+
+.login-footer-challenge {
+        color:#B2CBDB;
+        font-family:Tahoma,Verdana,Helvetica,sans-serif;
+        font-size:10px;
+        font-weight:normal;
+        margin-top:110px;
+        white-space: nowrap;
+}
+
+.formButton {
+    padding: 0px 4px 1px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #DDDDD8 #AFAFAF #797975;
+    color: #000000;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: visible; /* keeps IE from making buttons too wide */
+}
+
+.formButton-disabled {
+    padding: 0px 4px 1px;
+    border: 1px solid #B9B9B4;
+    background: #E5E5E0  none;
+    color: #737373;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: visible; /* keeps IE from making buttons too wide */
+}
+
+
+.loginFailed {
+    color: #AD0E25;
+}
