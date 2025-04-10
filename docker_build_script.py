@@ -5,8 +5,8 @@ from datetime import datetime
 import hashlib
 
 # --- Configuration ---
-GIT_REPO_PATH = "/path/to/your/repo"
-DOCKER_BUILD_DIR = "/path/to/docker_build"
+GIT_REPO_PATH = "/home/opc/honeypot/weblogic_honeypot"
+DOCKER_BUILD_DIR = "/home/opc/honeypot/weblogic_honeypot/docker_folder"
 TARGET_FILE = "app-v1.py"
 CONTAINER_BASE_NAME = "weblogic-honeypot"
 
@@ -42,7 +42,7 @@ def main():
     # Create a new Docker image
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     new_image_tag = f"{CONTAINER_BASE_NAME}:{timestamp}"
-    subprocess.run(["docker", "build", "-t", new_image_tag, DOCKER_BUILD_DIR], check=True)
+    subprocess.run(["docker", "build", "--network=host", "-t", new_image_tag, DOCKER_BUILD_DIR], check=True)
 
     # Stop and remove existing container if running
     result = subprocess.run(["docker", "ps", "-q", "-f", f"name={CONTAINER_BASE_NAME}"], capture_output=True, text=True)
