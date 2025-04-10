@@ -8,7 +8,7 @@ import hashlib
 GIT_REPO_PATH = "/home/opc/honeypot/weblogic_honeypot"
 DOCKER_BUILD_DIR = "/home/opc/honeypot/weblogic_honeypot/docker_folder"
 TARGET_FILE = "app-v1.py"
-CONTAINER_BASE_NAME = "weblogic-honeypot"
+CONTAINER_BASE_NAME = "weblogic_honeypot"
 
 def file_hash(filepath):
     """Return SHA256 hash of file contents."""
