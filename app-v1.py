@@ -391,7 +391,7 @@ def save_payload(ip, data):
         filename = f"payloads/{ip}_{int(time.time())}.txt"  
         with open(filename, "w") as f:  
             json.dump(data, f, indent=4)  
-        logging.info(f"[PAYLOAD SAVED] {filename}")
+        system_logger.info(f"[PAYLOAD SAVED] {filename}")
 
 def get_geoip(ip_address):
     geo_info = {}
@@ -487,6 +487,7 @@ def process_input(path: str, request: Request) -> Response:
     headers = dict(request.headers)
     payload_data = extract_payload(request)
     log_gen_event("General Event Record", ip, {
+        "path": request.path,
         "payload": payload_data,
         "headers": headers,
         "user_agent": user_agent
