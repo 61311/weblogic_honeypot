@@ -15,8 +15,6 @@ import random
 import logging
 
 
-# - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
-# - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
 
 stop_threads = threading.Event()
 
