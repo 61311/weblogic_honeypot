@@ -77,7 +77,7 @@ t3_logger = logging.getLogger('t3_events')
 t3_logger.setLevel(logging.INFO)
 t3_handler = logging.FileHandler(exploit_events_log_file)
 t3_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-t3_logger.addHandler(t3_handler_handler)
+t3_logger.addHandler(t3_handler)
 
 # Function to log system events
 
