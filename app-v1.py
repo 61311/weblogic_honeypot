@@ -527,6 +527,7 @@ def save_payload(ip, data):
             json.dump(data, f, indent=4)  
         system_logger.info(f"[PAYLOAD SAVED] {filename}")
 
+# Look up Locations 
 def get_geoip(ip_address):
     geo_info = {}
     try:
