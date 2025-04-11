@@ -6,7 +6,7 @@ import hashlib
 
 # --- Configuration ---
 GIT_REPO_PATH = "/home/opc/honeypot/"
-DOCKER_BUILD_DIR = "/home/opc/honeypot/docker_folde r"
+DOCKER_BUILD_DIR = "/home/opc/honeypot/docker_folder"
 TARGET_FILE = "app-v1.py"
 CONTAINER_BASE_NAME = "weblogic_honeypot"
 
