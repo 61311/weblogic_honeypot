@@ -117,6 +117,7 @@ class EventType:
     UNEXPECTED_DATA = "unexpected_data"
     T3_PAYLOAD = "t3_payload"
 
+# GeoIP DB - Free Version
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
 def validate_and_secure_xml(xml_file, xsd_file=None):
