@@ -453,6 +453,8 @@ def download_remote_xml_from_payload(payload_str):
         except Exception as e:
             system_logger.error(f"Unexpected error while downloading XML: {e}")
 
+# For POST extract payloads 
+
 def extract_payload(request):
     """
     Extract payloads from an HTTP request, including raw body, form data, JSON, and query parameters.
