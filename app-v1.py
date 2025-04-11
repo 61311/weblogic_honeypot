@@ -172,6 +172,8 @@ def validate_xml_with_xsd(xml_file, xsd_file):
         system_logger.error(f"Unexpected error during XML schema validation: {e}")
         return False
 
+# List of CVE and other security related items that will be emulated
+
 exploit_dict = [
     {
         "exploit": "CVE-2025-21549",
