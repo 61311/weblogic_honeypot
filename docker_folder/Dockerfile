@@ -36,7 +36,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Create app directories
 RUN mkdir -p /opt/filebeat /var/log/supervisor
 
-RUN curl -L -O https://urldefense.com/v3/__https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-$*7BFILEBEAT_VERSION*7D-linux-x86_64.tar.gz__;JSU!!ACWV5N9M2RV99hQ!I-5JkFxBPziDvIxWs9_Wv0s3end4_C_WEy8YPmcdwqxCvIPPmNdmNokxs9LeBHptOBuur-72AeXVQ2TL6w$  && \
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-$*7BFILEBEAT_VERSION*7D-linux-x86_64.tar.gz && \
     tar xzvf filebeat-${FILEBEAT_VERSION}-linux-x86_64.tar.gz && \
     mv filebeat-${FILEBEAT_VERSION}-linux-x86_64/* /opt/filebeat/ && \
     rm -rf filebeat-${FILEBEAT_VERSION}-linux-x86_64*
