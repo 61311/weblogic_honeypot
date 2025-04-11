@@ -1,0 +1,28 @@
+filebeat.inputs:
+  - type: log
+    paths:
+      - /app/log/*.log
+    json.keys_under_root: true
+    json.overwrite_keys: true
+    multiline.pattern: '^{'
+    multiline.negate: true
+    multiline.match: after
+
+processors:
+  - decode_json_fields:
+      fields: ["message"]
+      target: ""
+      overwrite_keys: true
+
+  - dissect:
+      tokenizer: "%{syslog_timestamp} - %{log.level} - %{message}"
+      field: "message"
+      target_prefix: ""
+
+  - timestamp:
+      field: timestamp
+      layouts:
+        - '2006-01-02T15:04:05.000000Z07:00'
+
+output.logstash:
+  hosts: ["localhost:5044"]
