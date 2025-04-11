@@ -13,10 +13,13 @@ import json
 import time
 import random
 import logging
+import re
+from defusedxml.ElementTree import parse as secure_parse
+from defusedxml.ElementTree import ParseError
+import xmlschema
+import urllib.parse
 
 
-# - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
-# - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
 
 stop_threads = threading.Event()
 
@@ -43,6 +46,8 @@ WantedBy=multi-user.target'''
 
 log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True)
+os.makedirs("captures", exist_ok=True)
+os.makedirs("payloads", exist_ok=True)
 
 # Log file paths
 system_log_file = os.path.join(log_dir, 'system.log')
@@ -75,7 +80,7 @@ exploit_logger.addHandler(exploit_handler)
 
 t3_logger = logging.getLogger('t3_events')
 t3_logger.setLevel(logging.INFO)
-t3_handler = logging.FileHandler(exploit_events_log_file)
+t3_handler = logging.FileHandler(t3_events_log_file)
 t3_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 t3_logger.addHandler(t3_handler)
 
@@ -112,7 +117,62 @@ class EventType:
     UNEXPECTED_DATA = "unexpected_data"
     T3_PAYLOAD = "t3_payload"
 
+# GeoIP DB - Free Version
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
+
+# Validate Ingest XML is XML
+def validate_and_secure_xml(xml_file, xsd_file=None):
+    """
+    Validate and securely parse an XML file.
+    - Checks for well-formedness and XXE protection.
+    - Optionally validates against an XSD schema.
+    """
+    if not is_secure_and_well_formed_xml(xml_file):
+        system_logger.error(f"XML file {xml_file} failed security or well-formedness checks.")
+        return False
+
+    if xsd_file:
+        if not validate_xml_with_xsd(xml_file, xsd_file):
+            system_logger.error(f"XML file {xml_file} failed schema validation.")
+            return False
+
+    system_logger.info(f"XML file {xml_file} passed all checks.")
+    return True
+
+# Validate Ingest XML is XML
+
+def is_secure_and_well_formed_xml(xml_file):
+    """
+    Check if the XML file is well-formed and secure (protected against XXE).
+    """
+    try:
+        secure_parse(xml_file)
+        system_logger.info(f"XML file {xml_file} is well-formed and secure.")
+        return True
+    except ParseError as e:
+        system_logger.error(f"XML parsing error: {e}")
+        return False
+    except Exception as e:
+        system_logger.error(f"Unexpected error while parsing XML: {e}")
+        return False
+    
+def validate_xml_with_xsd(xml_file, xsd_file):
+    """
+    Validate the XML file against an XSD schema.
+    """
+    try:
+        schema = xmlschema.XMLSchema(xsd_file)
+        schema.validate(xml_file)
+        system_logger.info(f"XML file {xml_file} is valid against schema {xsd_file}.")
+        return True
+    except xmlschema.exceptions.XMLSchemaValidationError as e:
+        system_logger.error(f"XML validation error: {e}")
+        return False
+    except Exception as e:
+        system_logger.error(f"Unexpected error during XML schema validation: {e}")
+        return False
+
+# List of CVE and other security related items that will be emulated
 
 exploit_dict = [
     {
@@ -127,6 +187,15 @@ exploit_dict = [
     {
         "exploit": "CVE-2020-14750",
         "exploit_path": "/console/images/%252e%252e%252fconsole.portal",
+        "method": "['GET']",
+        "response": "Unauthorized access",
+        "response_status": 403,
+        "headers": {},
+        "description": "Unauthenticated remote code execution via path traversal."
+    },
+        {
+        "exploit": "CVE-2020-14750",
+        "exploit_path": "/console/images/%2e%2e%2fconsole.portal",
         "method": "['GET']",
         "response": "Unauthorized access",
         "response_status": 403,
@@ -329,7 +398,18 @@ exploit_dict = [
         "response_status": 200,
         "headers": {},
         "description": "Emulated China Chopper webshell endpoint."
+    },
+        {
+        "exploit": "A.txt In Root Path",
+        "exploit_path": "/a.txt",
+        "method": "['GET']",
+        "response": "Success",
+        "response_status": 200,
+        "headers": {},
+        "description": "Emulated Compromised Host with Attacker File."
     }]
+
+
 # Random delay to evade fingerprinting  
 def random_delay():  
     time.sleep(random.uniform(0.5, 2.5))  
@@ -341,51 +421,113 @@ def weblogic_headers(response):
     response.headers.update(WEBLOGIC_HEADERS)
     return response
 
-def extract_payload(request):  
-    payloads = {}  
-    # Get raw request body  
-    if request.data:  
-        payloads["body"] = request.data.decode(errors="ignore")  
-     # Get form data  
-    if request.form:  
-        payloads["form"] = request.form.to_dict()  
-    # Get JSON data  
-    try:  
-        json_data = request.get_json()  
-        if json_data:  
-            payloads["json"] = json_data  
-    except:  
-        pass  
-  
-    # Get query parameters  
-    if request.args:  
-        payloads["query"] = request.args.to_dict()  
-  
-    # Extract encoded payloads (Base64, URL encoding)  
-    for key, value in payloads.items():  
-        if isinstance(value, str):  
-            try:  
-                decoded_value = base64.b64decode(value).decode()  
-                payloads[f"{key}_decoded"] = decoded_value  
-            except:  
-                pass  
-  
-            try:  
-                decoded_url = urllib.parse.unquote(value)  
-                payloads[f"{key}_url_decoded"] = decoded_url  
-            except:  
-                pass  
+# Function to download XXE file from remote locations - for single vuln only 
+    
+def download_remote_xml_from_payload(payload_str):
+    """
+    Download and validate XML files from a remote URL.
+    """
+    match = re.search(r'ClassPathXmlApplicationContext\(\s*(https?://[^)\\]+)\s*\)', payload_str)
+    if match:
+        url = match.group(1)
+        try:
+            system_logger.info(f"[*] Attempting to download XML from {url}")
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
 
-    return payloads  
-  
+            os.makedirs("captures", exist_ok=True)
+            filename = f"captures/xml_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.xml"
+            with open(filename, 'wb') as f:
+                f.write(response.content)
+
+            system_logger.info(f"[+] Saved remote XML to {filename}")
+
+            # Validate and secure the XML
+            xsd_file = "schema.xsd"  # Replace with your actual schema file path
+            if not validate_and_secure_xml(filename, xsd_file):
+                system_logger.error(f"XML file {filename} failed validation or security checks.")
+            else:
+                system_logger.info(f"XML file {filename} passed all validation and security checks.")
+        except requests.exceptions.RequestException as e:
+            system_logger.error(f"[!] Failed to fetch remote XML from {url}: {e}")
+        except Exception as e:
+            system_logger.error(f"Unexpected error while downloading XML: {e}")
+
+# For POST extract payloads 
+
+def extract_payload(request):
+    """
+    Extract payloads from an HTTP request, including raw body, form data, JSON, and query parameters.
+    Handles Base64 and URL-encoded payloads.
+    """
+    payloads = {}
+
+    # Extract raw request body
+    if request.data:
+        try:
+            payloads["body"] = request.data.decode(errors="ignore")
+        except Exception as e:
+            system_logger.error(f"Error decoding request body: {e}")
+
+    # Extract form data
+    if request.form:
+        try:
+            form_data = request.form.to_dict()
+            payloads["form"] = form_data
+
+            # Handle specific keys in form data (e.g., 'handle')
+            if 'handle' in form_data:
+                handle_payload = form_data['handle']
+                download_remote_xml_from_payload(handle_payload)
+        except Exception as e:
+            system_logger.error(f"Error extracting form data: {e}")
+
+    # Extract JSON data
+    try:
+        json_data = request.get_json()
+        if json_data:
+            payloads["json"] = json_data
+    except Exception as e:
+        system_logger.error(f"Error parsing JSON data: {e}")
+
+    # Extract query parameters
+    if request.args:
+        try:
+            payloads["query"] = request.args.to_dict()
+        except Exception as e:
+            system_logger.error(f"Error extracting query parameters: {e}")
+
+    # Decode Base64 and URL-encoded payloads
+    for key, value in payloads.items():
+        if isinstance(value, str):
+            # Attempt Base64 decoding
+            try:
+                decoded_value = base64.b64decode(value).decode(errors="ignore")
+                payloads[f"{key}_base64_decoded"] = decoded_value
+            except Exception:
+                pass  # Ignore errors for non-Base64 strings
+
+            # Attempt URL decoding
+            try:
+                decoded_url = urllib.parse.unquote(value)
+                payloads[f"{key}_url_decoded"] = decoded_url
+            except Exception:
+                pass  # Ignore errors for non-URL-encoded strings
+
+    # Log extracted payloads for debugging
+    system_logger.info(f"Extracted payloads: {json.dumps(payloads, indent=4)}")
+
+    return payloads
+
 # Save payloads separately for analysis  
 def save_payload(ip, data):  
     if data:  
         filename = f"payloads/{ip}_{int(time.time())}.txt"  
         with open(filename, "w") as f:  
             json.dump(data, f, indent=4)  
-        logging.info(f"[PAYLOAD SAVED] {filename}")
+        system_logger.info(f"[PAYLOAD SAVED] {filename}")
 
+# Look up Locations 
 def get_geoip(ip_address):
     geo_info = {}
     try:
@@ -427,8 +569,10 @@ def log_mal_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    general_logger.info(json.dumps(log_entry))
-        
+    exploit_logger.info(json.dumps(log_entry))
+
+# Log General Connection to none exploitable paths 
+
 def log_gen_event(event_type, ip, details):
     log_entry = {
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -437,7 +581,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    exploit_logger.info(json.dumps(log_entry))
+    general_logger.info(json.dumps(log_entry))
 
 
 # Processing of Request/Response
@@ -480,6 +624,7 @@ def process_input(path: str, request: Request) -> Response:
     headers = dict(request.headers)
     payload_data = extract_payload(request)
     log_gen_event("General Event Record", ip, {
+        "path": request.path,
         "payload": payload_data,
         "headers": headers,
         "user_agent": user_agent
@@ -487,7 +632,7 @@ def process_input(path: str, request: Request) -> Response:
     save_payload(ip, payload_data)
     directory_path = 'source/oam/pages'
     if not os.path.exists(directory_path):
-        logger.error(f"Directory not found: {directory_path}")
+        system_logger.error(f"Directory not found: {directory_path}")
         return Response("Internal Server Error: Directory not found", status=500)
     return send_from_directory(directory_path, 'login.html')
 
@@ -521,11 +666,11 @@ for port, app in apps.items():
             event_details = f"Captured credentials - Username: {username}, Password: {password}"
 
             log_gen_event("credential_capture", ip, event_details)
-            logger.info(f"Captured credentials from {ip}: {event_details}")
+            general_logger.info(f"Captured credentials from {ip}: {event_details}")
 
             return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
         except Exception as e:
-            logger.error(f"Error logging credentials: {str(e)}")
+            system_logger.error(f"Error logging credentials: {str(e)}")
             return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
@@ -624,18 +769,31 @@ def t3_handshake_sim(port=7001):
                 break
 
 
-if __name__ == "__main__":
-    for port, app in apps.items():
-        use_ssl = (port == 8443)  # Use SSL only on port 443
-        threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
-
-    t3_thread = threading.Thread(target=t3_handshake_sim, args=(7001,))
-    t3_thread.daemon = False  # Set daemon to False to allow joining
-    t3_thread.start()
-
+    
+def main():
+    """
+    Main function to start the honeypot services.
+    """
     try:
+        # Start Flask apps on different ports
+        for port, app in apps.items():
+            use_ssl = port == 8443  # Enable SSL only for port 8443
+            threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
+            log_system_event(f"Started Flask app on port {port} (SSL: {use_ssl})")
+
+        # Start T3 protocol simulation
+        t3_thread = threading.Thread(target=t3_handshake_sim, args=(7001,), daemon=True)
+        t3_thread.start()
+        log_system_event("Started T3 protocol simulation on port 7001")
+
+        # Keep the main thread alive
         while True:
             time.sleep(1)
+
     except KeyboardInterrupt:
+        log_system_event("Shutting down honeypot...")
         stop_threads.set()
-        t3_thread.join()
+        log_system_event("Honeypot services stopped.")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,91 @@
+PUT _ingest/pipeline/honeypot-ecs-pipeline
+{
+  "description": "Parse honeypot logs into ECS",
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": ["%{TIMESTAMP_ISO8601:syslog.timestamp} - %{LOGLEVEL:log.level} - %{GREEDYDATA:json_body}"]
+      }
+    },
+    {
+      "json": {
+        "field": "json_body",
+        "target_field": "event_data",
+        "add_to_root": true
+      }
+    },
+    {
+      "date": {
+        "field": "timestamp",
+        "formats": ["ISO8601"]
+      }
+    },
+    {
+      "rename": {
+        "field": "source_ip",
+        "target_field": "source.ip"
+      }
+    },
+    {
+      "rename": {
+        "field": "geoip.geo_info.country",
+        "target_field": "source.geo.country_name"
+      }
+    },
+    {
+      "rename": {
+        "field": "geoip.geo_info.city",
+        "target_field": "source.geo.city_name"
+      }
+    },
+    {
+      "rename": {
+        "field": "geoip.geo_info.region",
+        "target_field": "source.geo.region_name"
+      }
+    },
+    {
+      "rename": {
+        "field": "geoip.geo_info.latitude",
+        "target_field": "source.geo.location.lat"
+      }
+    },
+    {
+      "rename": {
+        "field": "geoip.geo_info.longitude",
+        "target_field": "source.geo.location.lon"
+      }
+    },
+    {
+      "rename": {
+        "field": "geoip.ip",
+        "target_field": "source.address"
+      }
+    },
+    {
+      "rename": {
+        "field": "details.headers.User-Agent",
+        "target_field": "user_agent.original"
+      }
+    },
+    {
+      "set": {
+        "field": "event.kind",
+        "value": "event"
+      }
+    },
+    {
+      "set": {
+        "field": "event.category",
+        "value": ["network"]
+      }
+    },
+    {
+      "set": {
+        "field": "event.type",
+        "value": ["info"]
+      }
+    }
+  ]
+}

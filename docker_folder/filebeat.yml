@@ -24,10 +24,9 @@ processors:
       layouts:
         - '2006-01-02T15:04:05.000000Z07:00'
 
-output.logstash:
-  hosts: ["localhost:5044"]
-
 output.elasticsearch:
-  hosts: ["localhost:9200"]
+  hosts: ["http://elasticsearch:9200"]
+  index: "honeypot-logs-%{+yyyy.MM.dd}"
+  pipeline: "honeypot-ecs-pipeline"
   username: "elastic"
-  password: "" 
+  password: "<your-password>"
