@@ -120,6 +120,7 @@ class EventType:
 # GeoIP DB - Free Version
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
+# Validate Ingest XML is XML
 def validate_and_secure_xml(xml_file, xsd_file=None):
     """
     Validate and securely parse an XML file.
