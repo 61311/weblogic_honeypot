@@ -28,7 +28,7 @@ COPY cert.pem /app/
 COPY key.pem /app/
 
 #Copy GEOIP DB
-COPY GeoLite2-City.mmdb
+COPY GeoLite2-City.mmdb /app/
 
 # Install required Python packages
 RUN pip install --no-cache-dir -r requirements.txt
