@@ -139,6 +139,8 @@ def validate_and_secure_xml(xml_file, xsd_file=None):
     system_logger.info(f"XML file {xml_file} passed all checks.")
     return True
 
+# Validate Ingest XML is XML
+
 def is_secure_and_well_formed_xml(xml_file):
     """
     Check if the XML file is well-formed and secure (protected against XXE).
