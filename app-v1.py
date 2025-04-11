@@ -408,6 +408,8 @@ exploit_dict = [
         "headers": {},
         "description": "Emulated Compromised Host with Attacker File."
     }]
+
+
 # Random delay to evade fingerprinting  
 def random_delay():  
     time.sleep(random.uniform(0.5, 2.5))  
@@ -419,7 +421,7 @@ def weblogic_headers(response):
     response.headers.update(WEBLOGIC_HEADERS)
     return response
 
-
+# Function to download XXE file from remote locations - for single vuln only 
     
 def download_remote_xml_from_payload(payload_str):
     """
