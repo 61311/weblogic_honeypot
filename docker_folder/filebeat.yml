@@ -29,4 +29,5 @@ output.logstash:
 
 output.elasticsearch:
   hosts: ["localhost:9200"]
-  pipeline: int_pipeline
+  username: "elastic"
+  password: "2g00d4u!!" 

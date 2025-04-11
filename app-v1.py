@@ -570,7 +570,9 @@ def log_mal_event(event_type, ip, details):
         "details": details
     }
     exploit_logger.info(json.dumps(log_entry))
-        
+
+# Log General Connection to none exploitable paths 
+
 def log_gen_event(event_type, ip, details):
     log_entry = {
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
