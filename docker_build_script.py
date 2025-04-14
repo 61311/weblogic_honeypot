@@ -75,7 +75,7 @@ def main():
     # Stop and remove existing container if running
     stop_and_remove_existing_container(CONTAINER_BASE_NAME)
 
-    # Start new container with specified ports and name
+    # Define the docker_run_cmd variable before using it
     docker_run_cmd = f"""
     docker run -d \
     -p 8080:8080 \
@@ -90,11 +90,11 @@ def main():
     {new_image_tag}
     """
 
-try:
+    try:
         result = subprocess.run(docker_run_cmd, shell=True, capture_output=True, text=True, check=True)
         print(f"New container started with image: {new_image_tag}")
         print(f"Docker run output: {result.stdout}")
-except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:
         print(f"Error starting container: {e.stderr}")
         print("Please check the Docker logs for more details.")
 
