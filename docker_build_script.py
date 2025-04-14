@@ -19,15 +19,25 @@ def file_hash(filepath):
         return hashlib.sha256(f.read()).hexdigest()
 
 def stop_and_remove_existing_container(container_name):
-    """Stop and remove an existing container if it is running."""
+    """Stop and remove an existing container if it is running or stopped."""
     try:
+        # Check for running container
         result = subprocess.run(["docker", "ps", "-q", "-f", f"name={container_name}"], capture_output=True, text=True)
         container_id = result.stdout.strip()
 
         if container_id:
-            print(f"Stopping and removing existing container: {container_name}")
+            print(f"Stopping and removing running container: {container_name}")
             subprocess.run(["docker", "stop", container_id], check=True)
             subprocess.run(["docker", "rm", container_id], check=True)
+
+        # Check for stopped container
+        result = subprocess.run(["docker", "ps", "-a", "-q", "-f", f"name={container_name}"], capture_output=True, text=True)
+        container_id = result.stdout.strip()
+
+        if container_id:
+            print(f"Removing stopped container: {container_name}")
+            subprocess.run(["docker", "rm", container_id], check=True)
+
     except subprocess.CalledProcessError as e:
         print(f"Error stopping/removing container: {e}")
 
@@ -57,7 +67,7 @@ def main():
     # Copy updated file to docker_build
     shutil.copy2(src_file, dst_file)
 
-    # Create a new Docker image
+    # Create a new Docker image with build date/time in the name
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     new_image_tag = f"{CONTAINER_BASE_NAME}:{timestamp}"
     subprocess.run(["docker", "build", "--network=host", "-t", new_image_tag, DOCKER_BUILD_DIR], check=True)
