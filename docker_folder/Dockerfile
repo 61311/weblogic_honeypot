@@ -1,5 +1,5 @@
 # Update Python version to 3.10 to ensure compatibility with Flask and Werkzeug
-FROM python:3.10-slim
+FROM python:3.10-slim-bullseye
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
