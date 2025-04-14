@@ -36,6 +36,9 @@ RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${
 COPY filebeat.yml /opt/filebeat/filebeat.yml
 COPY entrypoint.sh /entrypoint.sh
 
+# Set correct permissions for Filebeat configuration
+RUN chmod go-w /opt/filebeat/filebeat.yml
+
 # Set permissions
 RUN chmod +x /entrypoint.sh && chmod 777 /app/logs
 
