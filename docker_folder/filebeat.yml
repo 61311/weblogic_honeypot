@@ -1,27 +1,17 @@
 filebeat.inputs:
   - type: filestream
-    id: my-filestream-id
+    id: honeypot-logs
     enabled: true
     paths:
       - /app/logs/*.log
     json.keys_under_root: true
     json.overwrite_keys: true
-    json.message_key: "message"  # Added message_key to resolve the error
+    json.message_key: "message"
     multiline.pattern: '^{'
     multiline.negate: true
     multiline.match: after
 
 processors:
-  - decode_json_fields:
-      fields: ["message"]
-      target: ""
-      overwrite_keys: true
-
-  - dissect:
-      tokenizer: "%{syslog_timestamp} - %{log.level} - %{message}"
-      field: "message"
-      target_prefix: ""
-
   - timestamp:
       field: timestamp
       layouts:

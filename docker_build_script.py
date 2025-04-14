@@ -4,6 +4,7 @@ import shutil
 from datetime import datetime
 import hashlib
 import argparse
+import time
 
 # --- Configuration ---
 GIT_REPO_PATH = "/home/opc/honeypot/"
@@ -94,6 +95,8 @@ def main():
         result = subprocess.run(docker_run_cmd, shell=True, capture_output=True, text=True, check=True)
         print(f"New container started with image: {new_image_tag}")
         print(f"Docker run output: {result.stdout}")
+        print("Waiting for docker container to start...")
+        time.sleep(10)  # Wait for the container to start
         print("Testing Honeypot is Running Successfully...")
         subprocess.run(["python3","test_app_v1.py"], check=True)
         print("Test completed successfully.")

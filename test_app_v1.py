@@ -9,7 +9,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 BASE_URLS = [
     "http://127.0.0.1:8000",
-    "https://127.0.0.1:8080",
+    "http://127.0.0.1:8080",
     "http://127.0.0.1:8001",
     "http://127.0.0.1:14100",
     "http://127.0.0.1:14000",
