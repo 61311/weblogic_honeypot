@@ -18,6 +18,19 @@ def file_hash(filepath):
     with open(filepath, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
 
+def stop_and_remove_existing_container(container_name):
+    """Stop and remove an existing container if it is running."""
+    try:
+        result = subprocess.run(["docker", "ps", "-q", "-f", f"name={container_name}"], capture_output=True, text=True)
+        container_id = result.stdout.strip()
+
+        if container_id:
+            print(f"Stopping and removing existing container: {container_name}")
+            subprocess.run(["docker", "stop", container_id], check=True)
+            subprocess.run(["docker", "rm", container_id], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error stopping/removing container: {e}")
+
 def main():
     parser = argparse.ArgumentParser(description="Docker build script for WebLogic honeypot.")
     parser.add_argument("--force", action="store_true", help="Force container rebuild even if app-v1.py has not changed.")
@@ -50,12 +63,7 @@ def main():
     subprocess.run(["docker", "build", "--network=host", "-t", new_image_tag, DOCKER_BUILD_DIR], check=True)
 
     # Stop and remove existing container if running
-    result = subprocess.run(["docker", "ps", "-q", "-f", f"name={CONTAINER_BASE_NAME}"], capture_output=True, text=True)
-    container_id = result.stdout.strip()
-
-    if container_id:
-        subprocess.run(["docker", "stop", container_id], check=True)
-        subprocess.run(["docker", "rm", container_id], check=True)
+    stop_and_remove_existing_container(CONTAINER_BASE_NAME)
 
     # Start new container with specified ports and name
     docker_run_cmd = f"""
