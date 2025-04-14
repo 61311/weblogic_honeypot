@@ -94,9 +94,13 @@ def main():
         result = subprocess.run(docker_run_cmd, shell=True, capture_output=True, text=True, check=True)
         print(f"New container started with image: {new_image_tag}")
         print(f"Docker run output: {result.stdout}")
+        print("Testing Honeypot is Running Successfully...")
+        subprocess.run(["python3","test_app_v1.py"], check=True)
+        print("Test completed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error starting container: {e.stderr}")
         print("Please check the Docker logs for more details.")
+        
 
 if __name__ == "__main__":
     main()

@@ -2,10 +2,14 @@ import requests
 import socket
 import json
 import time
+import urllib3
+
+# Suppress SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 BASE_URLS = [
     "http://127.0.0.1:8000",
-    "https://127.0.0.1:8080"
+    "https://127.0.0.1:8080",
     "http://127.0.0.1:8001",
     "http://127.0.0.1:14100",
     "http://127.0.0.1:14000",
@@ -31,7 +35,7 @@ def test_exploit_paths():
         for path in EXPLOIT_PATHS:
             try:
                 url = f"{base_url}{path}"
-                response = requests.get(url, timeout=5)
+                response = requests.get(url, timeout=5, verify=False)  # Ignore SSL verification
                 print(f"GET {url} -> Status: {response.status_code}, Response: {response.text[:100]}")
             except Exception as e:
                 print(f"Error testing {url}: {e}")
@@ -40,7 +44,7 @@ def test_login(base_url):
     try:
         url = f"{base_url}/log"
         payload = {"username": "test_user", "password": "test_pass"}
-        response = requests.post(url, json=payload, timeout=5)
+        response = requests.post(url, json=payload, timeout=5, verify=False)  # Ignore SSL verification
         print(f"POST {url} -> Status: {response.status_code}, Response: {response.json()}")
     except Exception as e:
         print(f"Error testing login at {base_url}: {e}")
