@@ -3,7 +3,7 @@ filebeat.inputs:
     id: my-filestream-id
     enabled: true
     paths:
-      - /app/log/*.log
+      - /app/logs/*.log
     json.keys_under_root: true
     json.overwrite_keys: true
     json.message_key: "message"  # Added message_key to resolve the error
@@ -31,7 +31,7 @@ setup.template.name: "filebeat"
 setup.template.pattern: "filebeat-*"
 
 output.elasticsearch:
-  hosts: ["http://localhost:9200"]
+  hosts: ["https://localhost:9200"]
   index: "honeypot-logs-%{+yyyy.MM.dd}"
   pipeline: "honeypot-ecs-pipeline"
   username: "elastic"
