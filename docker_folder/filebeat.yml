@@ -24,6 +24,9 @@ processors:
       layouts:
         - '2006-01-02T15:04:05.000000Z07:00'
 
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
+
 output.elasticsearch:
   hosts: ["http://localhost:9200"]
   index: "honeypot-logs-%{+yyyy.MM.dd}"
