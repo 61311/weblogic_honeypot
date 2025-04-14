@@ -36,4 +36,4 @@ output.elasticsearch:
   pipeline: "honeypot-ecs-pipeline"
   username: "elastic"
   password: "<your-password>"
-  ssl.verification_mode: "none
+  ssl.verification_mode: "none"
