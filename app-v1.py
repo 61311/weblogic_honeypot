@@ -266,57 +266,54 @@ def log_gen_event(event_type, ip, details):
 
 
 # Processing of Request/Response
+def handle_exploit(exploit: dict) -> Response:
+    """Handle a detected exploit."""
+    ip = request.remote_addr
+    request_data = request.data.decode(errors='ignore')
+    user_agent = request.headers.get("User-Agent", "Unknown")
+    headers = dict(request.headers)
+    payload_data = extract_payload(request)
+
+    log_mal_event(exploit["exploit"], ip, {
+        "path": request.path,
+        "payload": request_data,
+        "exploit": exploit["exploit"],
+        "headers": headers,
+        "user_agent": user_agent
+    })
+
+    save_payload(ip, payload_data)
+
+    response_body = exploit["response"]
+    response_status = int(exploit.get("response_status", 200))
+    response = Response(response_body, status=response_status)
+    weblogic_headers(response)
+    random_delay()
+    return response
+
 def process_input(path: str, request: Request) -> Response:
     """Process an incoming request and check for potential exploits."""
-    
-    def handle_exploit(exploit: dict) -> None:
-        """Handle a detected exploit."""
-        ip = request.remote_addr
-        request_data = request.data.decode(errors='ignore')
-        user_agent = request.headers.get("User-Agent", "Unknown")
-        headers = dict(request.headers)
-        payload_data = extract_payload(request)
-        
-        log_mal_event(exploit["exploit"], ip, {
-            "path": request.path,
-            "payload": request_data,
-            "exploit": exploit["exploit"],
-            "headers": headers,
-            "user_agent": user_agent
-        })
-        
-        save_payload(ip, payload_data)
-        
-        response_body = exploit["response"]
-        response_status = int(exploit.get("response_status", 200))
-        response = Response(response_body, status=response_status)
-        weblogic_headers(response)
-        random_delay()
-        return response
-    
     for exploit in exploit_dict:
-                if request.path == exploit["exploit_path"]:
+        if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
-        
 
     # If no exploit is matched, log a general event and serve the index.html file
-            ip = request.remote_addr
-            request_data = request.data.decode(errors='ignore')
-            user_agent = request.headers.get("User-Agent", "Unknown")
-            headers = dict(request.headers)
-            payload_data = extract_payload(request)
-            log_gen_event("General Event Record", ip, {
-                "path": request.path,
-                "payload": request_data,
-                "headers": headers,
-                "user_agent": user_agent
-            })
-            save_payload(ip, payload_data)
-directory_path = 'source/oam/pages'
+    ip = request.remote_addr
+    user_agent = request.headers.get("User-Agent", "Unknown")
+    headers = dict(request.headers)
+    payload_data = extract_payload(request)
+    log_gen_event("General Event Record", ip, {
+        "path": request.path,
+        "payload": payload_data,
+        "headers": headers,
+        "user_agent": user_agent
+    })
+    save_payload(ip, payload_data)
+    directory_path = 'source/oam/pages'
     if not os.path.exists(directory_path):
         system_logger.error(f"Directory not found: {directory_path}")
         return Response("Internal Server Error: Directory not found", status=500)
-            return send_from_directory(directory_path, 'login.html')
+    return send_from_directory(directory_path, 'login.html')
 
 # Routes
 def serve_index():
@@ -325,11 +322,11 @@ def serve_index():
 # Flask app initialization
 apps = {
 8080: Flask("weblogic_8080"),
-    8000: Flask("weblogic_80    00"),
+    8000: Flask("weblogic_8000"),
     8001: Flask("weblogic_8001"),
     14100: Flask("weblogic_14100"),
     14000: Flask("weblogic_14000"),
-8    443: Flask("weblogic_8443"),
+    8443: Flask("weblogic_8443"),
     14101: Flask("weblogic_14101")
 }
 
@@ -376,10 +373,6 @@ for port, app in apps.items():
         if path == "" or path == "/":
             return serve_index()
         return process_input(path, request)
-
-
-
-
 
 # Run Flask apps
 def run_flask_app(app, port, use_ssl=False):
