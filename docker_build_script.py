@@ -3,6 +3,7 @@ import subprocess
 import shutil
 from datetime import datetime
 import hashlib
+import argparse
 
 # --- Configuration ---
 GIT_REPO_PATH = "/home/opc/honeypot/"
@@ -18,6 +19,10 @@ def file_hash(filepath):
         return hashlib.sha256(f.read()).hexdigest()
 
 def main():
+    parser = argparse.ArgumentParser(description="Docker build script for WebLogic honeypot.")
+    parser.add_argument("--force", action="store_true", help="Force container rebuild even if app-v1.py has not changed.")
+    args = parser.parse_args()
+
     os.chdir(GIT_REPO_PATH)
 
     # Pull latest code
@@ -30,11 +35,11 @@ def main():
     old_hash = file_hash(dst_file)
     new_hash = file_hash(src_file)
 
-    if old_hash == new_hash:
+    if not args.force and old_hash == new_hash:
         print("No changes detected in app-v1.py.")
         return
 
-    print("Changes detected. Updating Docker container...")
+    print("Changes detected or --force flag used. Updating Docker container...")
 
     # Copy updated file to docker_build
     shutil.copy2(src_file, dst_file)
