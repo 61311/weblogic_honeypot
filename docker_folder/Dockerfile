@@ -1,5 +1,5 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# Update Python version to 3.10 to ensure compatibility with Flask and Werkzeug
+FROM python:3.10-slim
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
