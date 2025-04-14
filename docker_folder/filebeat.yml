@@ -17,14 +17,19 @@ processors:
       layouts:
         - '2006-01-02T15:04:05.000000Z07:00'
 
-setup.ilm.enabled: false
-setup.template.name: "honeypot"
-setup.template.pattern: "honeypot-logs-*"
+# ILM must be enabled for data streams
+setup.ilm.enabled: true
+
+# Remove all template.name / pattern — Filebeat will use data stream templates
+setup.template.enabled: true
 
 output.elasticsearch:
-  hosts: ["https://localhost:9200"]
-  index: "honeypot-logs-%{+yyyy.MM.dd}"
-  pipeline: "honeypot-ecs-pipeline"
+  hosts: ["https://10.0.0.135:9200"]
   username: "elastic"
   password: "<your-password>"
-  ssl.verification_mode: "none"
+  ssl.verification_mode: none
+
+# Use data stream routing
+output.elasticsearch.indices:
+  - index: "honeypot-logs"
+    pipeline: "honeypot-ecs-pipeline"
