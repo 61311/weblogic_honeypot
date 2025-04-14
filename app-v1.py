@@ -727,6 +727,21 @@ def run_flask_app(app, port, use_ssl=False):
     else:
         app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
+def log_t3_event(event_type, ip, port, extra=None):
+    """Helper to log a structured T3 JSON event."""
+    log_entry = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "event_type": event_type,
+        "ip": get_geoip(ip),
+        "port": port
+    }
+    if extra:
+        log_entry.update(extra)
+    try:
+        t3_logger.info(json.dumps(log_entry, default=str))
+    except Exception as e:
+        t3_logger.error(f"Failed to log T3 event: {e}")
+
 def t3_handshake_sim(port=7001):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -738,32 +753,33 @@ def t3_handshake_sim(port=7001):
             try:
                 client_socket, addr = server_socket.accept()
                 ip = addr[0]
-                t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - connection", "ip": get_geoip(ip), "port": port})
+                log_t3_event("t3 protocol - connection", ip, port)
 
                 try:
                     data = client_socket.recv(1024)
                     if b"\xac\xed\x00\x05" in data:
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data": data.hex()})
+                        log_t3_event("t3 protocol - decode", ip, port, {"data": data.hex()})
 
                     decoded = data.decode(errors='ignore')
 
                     if decoded.startswith("t3"):
                         response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
                         client_socket.sendall(response.encode())
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - sent_response", "ip": get_geoip(ip), "port": port})
-
+                        log_t3_event("t3 protocol - sent_response", ip, port)
                     else:
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - unexpected data", "ip": get_geoip(ip), "port": port})
+                        log_t3_event("t3 protocol - unexpected data", ip, port)
 
                     payload = client_socket.recv(4096)
                     if payload:
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data":  payload.decode(errors='ignore')})
+                        log_t3_event("t3 protocol - decode", ip, port, {
+                            "data": payload.decode(errors='ignore')
+                        })
 
                 except Exception as e:
-                    log_system_event(f"T3 Error Error: {e}")
+                    log_system_event(f"T3 Inner Error: {e}")
                 finally:
                     client_socket.close()
-                    t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - disconnection", "ip": get_geoip(ip), "port": port})
+                    log_t3_event("t3 protocol - disconnection", ip, port)
 
             except socket.error:
                 break
