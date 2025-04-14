@@ -19,9 +19,9 @@ from defusedxml.ElementTree import ParseError
 import xmlschema
 import urllib.parse
 
-# - https://github.com/ZZ-SOCMAP/CVE-2021-35587/blob/main/CVE-2021-35587.py 
-# - https://github.com/AymanElSherif/oracle-oam-authentication-bypas-exploit
 
+
+stop_threads = threading.Event()
 
 '''
 sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3
@@ -46,9 +46,54 @@ WantedBy=multi-user.target'''
 
 log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, 'honeypot.log')
-logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('honeypot')
+os.makedirs("captures", exist_ok=True)
+os.makedirs("payloads", exist_ok=True)
+
+# Log file paths
+system_log_file = os.path.join(log_dir, 'system.log')
+general_events_log_file = os.path.join(log_dir, 'general_events.log')
+exploit_events_log_file = os.path.join(log_dir, 'exploit_events.log')
+t3_events_log_file = os.path.join(log_dir, 't3_events.log')
+
+# Configure system logger
+system_logger = logging.getLogger('system')
+system_logger.setLevel(logging.INFO)
+system_handler = logging.FileHandler(system_log_file)
+system_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+system_logger.addHandler(system_handler)
+
+# Configure general events logger
+general_logger = logging.getLogger('general_events')
+general_logger.setLevel(logging.INFO)
+general_handler = logging.FileHandler(general_events_log_file)
+general_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+general_logger.addHandler(general_handler)
+
+# Configure exploit events logger
+exploit_logger = logging.getLogger('exploit_events')
+exploit_logger.setLevel(logging.INFO)
+exploit_handler = logging.FileHandler(exploit_events_log_file)
+exploit_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+exploit_logger.addHandler(exploit_handler)
+
+# Configure T3 events logger
+
+t3_logger = logging.getLogger('t3_events')
+t3_logger.setLevel(logging.INFO)
+t3_handler = logging.FileHandler(t3_events_log_file)
+t3_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+t3_logger.addHandler(t3_handler)
+
+# Function to log system events
+
+def log_system_event(message, level='info'):
+    if level == 'info':
+        system_logger.info(message)
+    elif level == 'error':
+        system_logger.error(message)
+    elif level == 'warning':
+        system_logger.warning(message)
+
 
 # Constants
 WEBLOGIC_HEADERS = {
@@ -64,9 +109,71 @@ WEBLOGIC_HEADERS = {
     "X-Frame-Options": "SAMEORIGIN"
 }
 
+# Event Types
+class EventType:
+    GENERAL_EVENT_RECORD = "General Event Record"
+    CREDENTIAL_CAPTURE = "credential_capture"
+    SERIALIZED_OBJECT = "serialized_object"
+    UNEXPECTED_DATA = "unexpected_data"
+    T3_PAYLOAD = "t3_payload"
+
+# GeoIP DB - Free Version
 GEOIP_DB_PATH = "GeoLite2-City.mmdb"
 
-# Exploit dictionary
+# Validate Ingest XML is XML
+def validate_and_secure_xml(xml_file, xsd_file=None):
+    """
+    Validate and securely parse an XML file.
+    - Checks for well-formedness and XXE protection.
+    - Optionally validates against an XSD schema.
+    """
+    if not is_secure_and_well_formed_xml(xml_file):
+        system_logger.error(f"XML file {xml_file} failed security or well-formedness checks.")
+        return False
+
+    if xsd_file:
+        if not validate_xml_with_xsd(xml_file, xsd_file):
+            system_logger.error(f"XML file {xml_file} failed schema validation.")
+            return False
+
+    system_logger.info(f"XML file {xml_file} passed all checks.")
+    return True
+
+# Validate Ingest XML is XML
+
+def is_secure_and_well_formed_xml(xml_file):
+    """
+    Check if the XML file is well-formed and secure (protected against XXE).
+    """
+    try:
+        secure_parse(xml_file)
+        system_logger.info(f"XML file {xml_file} is well-formed and secure.")
+        return True
+    except ParseError as e:
+        system_logger.error(f"XML parsing error: {e}")
+        return False
+    except Exception as e:
+        system_logger.error(f"Unexpected error while parsing XML: {e}")
+        return False
+    
+def validate_xml_with_xsd(xml_file, xsd_file):
+    """
+    Validate the XML file against an XSD schema.
+    """
+    try:
+        schema = xmlschema.XMLSchema(xsd_file)
+        schema.validate(xml_file)
+        system_logger.info(f"XML file {xml_file} is valid against schema {xsd_file}.")
+        return True
+    except xmlschema.exceptions.XMLSchemaValidationError as e:
+        system_logger.error(f"XML validation error: {e}")
+        return False
+    except Exception as e:
+        system_logger.error(f"Unexpected error during XML schema validation: {e}")
+        return False
+
+# List of CVE and other security related items that will be emulated
+
 exploit_dict = [
     {
         "exploit": "CVE-2025-21549",
@@ -74,7 +181,8 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Server is ready",
         "response_status": 200,
-        "headers": {}
+        "headers": {},
+        "description": "WebLogic readiness check endpoint."
     },
     {
         "exploit": "CVE-2020-14750",
@@ -82,7 +190,17 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Unauthorized access",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Unauthenticated remote code execution via path traversal."
+    },
+        {
+        "exploit": "CVE-2020-14750",
+        "exploit_path": "/console/images/%2e%2e%2fconsole.portal",
+        "method": "['GET']",
+        "response": "Unauthorized access",
+        "response_status": 403,
+        "headers": {},
+        "description": "Unauthenticated remote code execution via path traversal."
     },
     {
         "exploit": "CVE-2020-14882",
@@ -90,7 +208,8 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Unauthorized access",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Path traversal vulnerability allowing unauthenticated remote code execution."
     },
     {
         "exploit": "CVE-2023-21839",
@@ -98,7 +217,8 @@ exploit_dict = [
         "method": "['POST']",
         "response": "Internal Server Error",
         "response_status": 500,
-        "headers": {}
+        "headers": {},
+        "description": "Remote code execution vulnerability in WebLogic asynchronous service."
     },
     {
         "exploit": "CVE-2024-20931",
@@ -106,39 +226,89 @@ exploit_dict = [
         "method": "['GET']",
         "response": "Forbidden",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Access control vulnerability in WebLogic console."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2019-2725",
         "exploit_path": "/wls-wsat/CoordinatorPortType",
         "method": "['POST']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Deserialization vulnerability allowing remote code execution."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2019-2729",
         "exploit_path": "/wls-wsat/RegistrationPortTypeRPC",
         "method": "['POST']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Deserialization vulnerability allowing remote code execution."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2019-2890",
         "exploit_path": "/bea_wls_internal/",
         "method": "['GET']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Remote code execution vulnerability in WebLogic internal endpoints."
     },
     {
-        "exploit": "Exploit Attempt",
+        "exploit": "CVE-2018-2894",
         "exploit_path": "/uddiexplorer/",
         "method": "['GET']",
         "response": "Access denied",
         "response_status": 403,
-        "headers": {}
+        "headers": {},
+        "description": "Directory traversal vulnerability in WebLogic UDDI Explorer."
+    },
+    {
+        "exploit": "CVE-2021-35587",
+        "exploit_path": "/oam/server/",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Authentication bypass vulnerability in Oracle Access Manager."
+    },
+    {
+        "exploit": "CVE-2023-21931",
+        "exploit_path": "/oamconsole/afr/a/remote/",
+        "method": "['GET']",
+        "response": "ADF_FACES-30200: Fatal exception during PhaseId: RESTORE_VIEW",
+        "response_status": 500,
+        "headers": {},
+        "description": "Remote code execution vulnerability in Oracle Access Manager."
+    },
+    {
+        "exploit": "CVE-2022-21510",
+        "exploit_path": "/oam/server/",
+        "method": "['GET']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Vulnerability in Oracle Access Manager allowing unauthenticated access to sensitive data."
+    },
+    {
+        "exploit": "CVE-2017-10271",
+        "exploit_path": "/wls-wsat/CoordinatorPortType",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "XMLDecoder deserialization vulnerability in WebLogic Server."
+    },
+    {
+        "exploit": "CVE-2018-2628",
+        "exploit_path": "/wls-wsat/CoordinatorPortType",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Remote code execution vulnerability in WebLogic Server due to unsafe deserialization."
     },
     {
         "exploit": "Exploit Attempt",
@@ -147,8 +317,97 @@ exploit_dict = [
         "response": "Access denied",
         "response_status": 403,
         "headers": {}
-    }
-]
+    },
+    {
+        "exploit": "CVE-2020-14750",
+        "exploit_path": "/OA_HTML/BneOfflineLOVService",
+        "method": "['POST']",
+        "response": '''<?xml version="1.0" encoding="UTF-8"?><bne:document xmlns:bne="http://www.oracle.com/bne"><bne:messages xmlns:bne="http://www.oracle.com/bne"><bne:message bne:type="ERROR" bne:text="Cannot be logged in as GUEST." bne:cause="" bne:action="" /></bne:messages></bne:document>''',
+        "response_status": 200,
+        "headers": {},
+        "description": "Oracle E-Business Suite vulnerability allowing unauthorized access."
+    },
+        {
+        "exploit": "CVE-2021-35587",
+        "exploit_path": "/oamconsole/afr/a/remote/",
+        "method": "['GET']",
+        "response": "ADF_FACES-30200:For more information, please see the server&#39;s error log for an entry beginning with: The UIViewRoot is null. Fatal exception during PhaseId: RESTORE_VIEW 1.",
+        "response_status": 500,
+        "headers": {},
+        "description": "Authentication bypass vulnerability in Oracle Access Manager."
+        },
+    {
+        "exploit": "CVE-2020-2586",
+        "exploit_path": "/OA_HTML/BneApplicationService",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Unauthenticated access to sensitive data in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2020-2587",
+        "exploit_path": "/OA_HTML/BneWebService",
+        "method": "['POST']",
+        "response": "Internal Server Error",
+        "response_status": 500,
+        "headers": {},
+        "description": "Remote code execution vulnerability in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2019-2638",
+        "exploit_path": "/OA_HTML/BneUploaderService",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Unauthenticated access to sensitive data in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2018-2893",
+        "exploit_path": "/OA_HTML/BneOfflineLOVService",
+        "method": "['POST']",
+        "response": '''<?xml version="1.0" encoding="UTF-8"?><bne:document xmlns:bne="http://www.oracle.com/bne"><bne:messages xmlns:bne="http://www.oracle.com/bne"><bne:message bne:type="ERROR" bne:text="Cannot be logged in as GUEST." bne:cause="" bne:action="" /></bne:messages></bne:document>''',
+        "response_status": 200,
+        "headers": {},
+        "description": "Directory traversal vulnerability in Oracle E-Business Suite."
+    },
+    {
+        "exploit": "CVE-2021-2295",
+        "exploit_path": "/OA_HTML/BneDataService",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "SQL injection vulnerability in Oracle E-Business Suite."
+    },
+        {
+        "exploit": "JSPSpy Webshell",
+        "exploit_path": "/x.jsp",
+        "method": "['GET', 'POST']",
+        "response": "JSPSpy Webshell is ready.",
+        "response_status": 200,
+        "headers": {},
+        "description": "Emulated JSPSpy webshell endpoint."
+    },
+    {
+        "exploit": "China Chopper Webshell",
+        "exploit_path": "/aa.jsp",
+        "method": "['POST']",
+        "response": "Success",
+        "response_status": 200,
+        "headers": {},
+        "description": "Emulated China Chopper webshell endpoint."
+    },
+        {
+        "exploit": "A.txt In Root Path",
+        "exploit_path": "/a.txt",
+        "method": "['GET']",
+        "response": "Success",
+        "response_status": 200,
+        "headers": {},
+        "description": "Emulated Compromised Host with Attacker File."
+    }]
 
 
 # Random delay to evade fingerprinting  
@@ -162,51 +421,113 @@ def weblogic_headers(response):
     response.headers.update(WEBLOGIC_HEADERS)
     return response
 
-def extract_payload(request):  
-    payloads = {}  
-    # Get raw request body  
-    if request.data:  
-        payloads["body"] = request.data.decode(errors="ignore")  
-     # Get form data  
-    if request.form:  
-        payloads["form"] = request.form.to_dict()  
-    # Get JSON data  
-    try:  
-        json_data = request.get_json()  
-        if (json_data):  
-            payloads["json"] = json_data  
-    except:  
-        pass  
-  
-    # Get query parameters  
-    if request.args:  
-        payloads["query"] = request.args.to_dict()  
-  
-    # Extract encoded payloads (Base64, URL encoding)  
-    for key, value in payloads.items():  
-        if isinstance(value, str):  
-            try:  
-                decoded_value = base64.b64decode(value).decode()  
-                payloads[f"{key}_decoded"] = decoded_value  
-            except:  
-                pass  
-  
-            try:  
-                decoded_url = urllib.parse.unquote(value)  
-                payloads[f"{key}_url_decoded"] = decoded_url  
-            except:  
-                pass  
+# Function to download XXE file from remote locations - for single vuln only 
+    
+def download_remote_xml_from_payload(payload_str):
+    """
+    Download and validate XML files from a remote URL.
+    """
+    match = re.search(r'ClassPathXmlApplicationContext\(\s*(https?://[^)\\]+)\s*\)', payload_str)
+    if match:
+        url = match.group(1)
+        try:
+            system_logger.info(f"[*] Attempting to download XML from {url}")
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
 
-    return payloads  
-  
+            os.makedirs("captures", exist_ok=True)
+            filename = f"captures/xml_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.xml"
+            with open(filename, 'wb') as f:
+                f.write(response.content)
+
+            system_logger.info(f"[+] Saved remote XML to {filename}")
+
+            # Validate and secure the XML
+            xsd_file = "schema.xsd"  # Replace with your actual schema file path
+            if not validate_and_secure_xml(filename, xsd_file):
+                system_logger.error(f"XML file {filename} failed validation or security checks.")
+            else:
+                system_logger.info(f"XML file {filename} passed all validation and security checks.")
+        except requests.exceptions.RequestException as e:
+            system_logger.error(f"[!] Failed to fetch remote XML from {url}: {e}")
+        except Exception as e:
+            system_logger.error(f"Unexpected error while downloading XML: {e}")
+
+# For POST extract payloads 
+
+def extract_payload(request):
+    """
+    Extract payloads from an HTTP request, including raw body, form data, JSON, and query parameters.
+    Handles Base64 and URL-encoded payloads.
+    """
+    payloads = {}
+
+    # Extract raw request body
+    if request.data:
+        try:
+            payloads["body"] = request.data.decode(errors="ignore")
+        except Exception as e:
+            system_logger.error(f"Error decoding request body: {e}")
+
+    # Extract form data
+    if request.form:
+        try:
+            form_data = request.form.to_dict()
+            payloads["form"] = form_data
+
+            # Handle specific keys in form data (e.g., 'handle')
+            if 'handle' in form_data:
+                handle_payload = form_data['handle']
+                download_remote_xml_from_payload(handle_payload)
+        except Exception as e:
+            system_logger.error(f"Error extracting form data: {e}")
+
+    # Extract JSON data
+    try:
+        json_data = request.get_json()
+        if json_data:
+            payloads["json"] = json_data
+    except Exception as e:
+        system_logger.error(f"Error parsing JSON data: {e}")
+
+    # Extract query parameters
+    if request.args:
+        try:
+            payloads["query"] = request.args.to_dict()
+        except Exception as e:
+            system_logger.error(f"Error extracting query parameters: {e}")
+
+    # Decode Base64 and URL-encoded payloads
+    for key, value in payloads.items():
+        if isinstance(value, str):
+            # Attempt Base64 decoding
+            try:
+                decoded_value = base64.b64decode(value).decode(errors="ignore")
+                payloads[f"{key}_base64_decoded"] = decoded_value
+            except Exception:
+                pass  # Ignore errors for non-Base64 strings
+
+            # Attempt URL decoding
+            try:
+                decoded_url = urllib.parse.unquote(value)
+                payloads[f"{key}_url_decoded"] = decoded_url
+            except Exception:
+                pass  # Ignore errors for non-URL-encoded strings
+
+    # Log extracted payloads for debugging
+    system_logger.info(f"Extracted payloads: {json.dumps(payloads, indent=4)}")
+
+    return payloads
+
 # Save payloads separately for analysis  
 def save_payload(ip, data):  
     if data:  
         filename = f"payloads/{ip}_{int(time.time())}.txt"  
         with open(filename, "w") as f:  
             json.dump(data, f, indent=4)  
-        logging.info(f"[PAYLOAD SAVED] {filename}")
+        system_logger.info(f"[PAYLOAD SAVED] {filename}")
 
+# Look up Locations 
 def get_geoip(ip_address):
     geo_info = {}
     try:
@@ -242,60 +563,60 @@ def get_geoip(ip_address):
 
 def log_mal_event(event_type, ip, details):
     log_entry = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "event_type": event_type,
         "source_ip": ip,
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypot_mal_events.json", "a") as log_file:
-        json.dump(log_entry, log_file)
-        log_file.write("\n")
-        
+    exploit_logger.info(json.dumps(log_entry))
+
+# Log General Connection to none exploitable paths 
+
 def log_gen_event(event_type, ip, details):
     log_entry = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "event_type": event_type,
         "source_ip": ip,
         "geoip": get_geoip(ip),
         "details": details
     }
-    with open("honeypot_gen_events.json", "a") as log_file:
-        json.dump(log_entry, log_file)
-        log_file.write("\n")
+    general_logger.info(json.dumps(log_entry))
 
 
 # Processing of Request/Response
-def handle_exploit(exploit: dict) -> Response:
-    """Handle a detected exploit."""
-    ip = request.remote_addr
-    request_data = request.data.decode(errors='ignore')
-    user_agent = request.headers.get("User-Agent", "Unknown")
-    headers = dict(request.headers)
-    payload_data = extract_payload(request)
-
-    log_mal_event(exploit["exploit"], ip, {
-        "path": request.path,
-        "payload": request_data,
-        "exploit": exploit["exploit"],
-        "headers": headers,
-        "user_agent": user_agent
-    })
-
-    save_payload(ip, payload_data)
-
-    response_body = exploit["response"]
-    response_status = int(exploit.get("response_status", 200))
-    response = Response(response_body, status=response_status)
-    weblogic_headers(response)
-    random_delay()
-    return response
-
 def process_input(path: str, request: Request) -> Response:
     """Process an incoming request and check for potential exploits."""
-    for exploit in exploit_dict:
+    
+    def handle_exploit(exploit: dict) -> None:
+        """Handle a detected exploit."""
+        ip = request.remote_addr
+        request_data = request.data.decode(errors='ignore')
+        user_agent = request.headers.get("User-Agent", "Unknown")
+        headers = dict(request.headers)
+        payload_data = extract_payload(request)
+        
+        log_mal_event(exploit["exploit"], ip, {
+            "path": request.path,
+            "payload": request_data,
+            "exploit": exploit["exploit"],
+            "headers": headers,
+            "user_agent": user_agent
+        })
+        
+        save_payload(ip, payload_data)
+        
+        response_body = exploit["response"]
+        response_status = int(exploit.get("response_status", 200))
+        response = Response(response_body, status=response_status)
+        weblogic_headers(response)
+        random_delay()
+        return response
+    
+    for exploit in exploit_dict:        
         if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
+    
 
     # If no exploit is matched, log a general event and serve the index.html file
     ip = request.remote_addr
@@ -321,7 +642,7 @@ def serve_index():
 
 # Flask app initialization
 apps = {
-8080: Flask("weblogic_8080"),
+    8080: Flask("weblogic_8080"),
     8000: Flask("weblogic_8000"),
     8001: Flask("weblogic_8001"),
     14100: Flask("weblogic_14100"),
@@ -335,12 +656,8 @@ for port, app in apps.items():
     @app.route('/log', methods=['POST'])
     def log_credentials():
         try:
-            logger.info("Received POST request at /log")
             data = request.get_json()
-            logger.info(f"Request data: {data}")
-
             if not data or 'username' not in data or 'password' not in data:
-                logger.warning("Invalid request data")
                 return jsonify({'status': 'error', 'message': 'Invalid request data'}), 400
 
             username = data['username']
@@ -349,11 +666,11 @@ for port, app in apps.items():
             event_details = f"Captured credentials - Username: {username}, Password: {password}"
 
             log_gen_event("credential_capture", ip, event_details)
-            logger.info(f"Captured credentials from {ip}: {event_details}")
+            general_logger.info(f"Captured credentials from {ip}: {event_details}")
 
             return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
         except Exception as e:
-            logger.error(f"Error logging credentials: {str(e)}")
+            system_logger.error(f"Error logging credentials: {str(e)}")
             return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
@@ -367,12 +684,39 @@ for port, app in apps.items():
     @app.route('/js/<path:filename>')
     def serve_js(filename):
         return send_from_directory('source/oam/pages/js', filename)
+    @app.route('/a.txt', methods=['GET'])
+    def serve_a_txt():
+        """
+        Emulate a response for a.txt.
+        """
+        ip = request.remote_addr
+        user_agent = request.headers.get("User-Agent", "Unknown")
+
+        # Log the interaction
+        log_gen_event("a.txt Access", ip, {
+            "user_agent": user_agent,
+            "path": "/a.txt"
+        })
+
+        # Define the content of the text file
+        response_content = """# This is a simulated response for a.txt
+    # Honeypot interaction detected
+    # Timestamp: {}
+    # IP Address: {}
+    # User-Agent: {}
+    """.format(datetime.datetime.now(datetime.timezone.utc).isoformat(), ip, user_agent)
+    # Return the response
+        return Response(response_content, status=200, mimetype='text/plain')
     @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
     @app.route("/<path:path>", methods=["GET", "POST"])
     def catch_all(path):
         if path == "" or path == "/":
             return serve_index()
         return process_input(path, request)
+
+
+
+
 
 # Run Flask apps
 def run_flask_app(app, port, use_ssl=False):
@@ -388,40 +732,68 @@ def t3_handshake_sim(port=7001):
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind(("0.0.0.0", port))
         server_socket.listen(5)
-        print(f"[*] T3 honeypot listening on port {port}")
+        log_system_event(f"[*] T3 honeypot listening on port {port}")
 
-        while True:
-            client_socket, addr = server_socket.accept()
-            ip = addr[0]
-            print(f"[+] Connection from {addr}")
-
+        while not stop_threads.is_set():
             try:
-                data = client_socket.recv(1024)
-                if b"\xac\xed\x00\x05" in data:
-                    log_gen_event("serialized_object", ip, {"raw": data.hex()})
+                client_socket, addr = server_socket.accept()
+                ip = addr[0]
+                t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - connection", "ip": get_geoip(ip), "port": port})
 
-                decoded = data.decode(errors='ignore')
-                print(f"[>] Received: {decoded.strip()}")
+                try:
+                    data = client_socket.recv(1024)
+                    if b"\xac\xed\x00\x05" in data:
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data": data.hex()})
 
-                if decoded.startswith("t3"):
-                    response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
-                    client_socket.sendall(response.encode())
-                    print("[<] Sent T3 handshake response")
-                else:
-                    log_gen_event("unexpected_data", ip, {"raw": decoded.strip()})
+                    decoded = data.decode(errors='ignore')
 
-                payload = client_socket.recv(4096)
-                if payload:
-                    log_gen_event("t3_payload", ip, {"raw": payload.decode(errors='ignore')})
+                    if decoded.startswith("t3"):
+                        response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
+                        client_socket.sendall(response.encode())
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - sent_response", "ip": get_geoip(ip), "port": port})
 
-            except Exception as e:
-                print(f"[!] Error: {e}")
-            finally:
-                client_socket.close()
-                print("[*] Connection closed")
+                    else:
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - unexpected data", "ip": get_geoip(ip), "port": port})
+
+                    payload = client_socket.recv(4096)
+                    if payload:
+                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data":  payload.decode(errors='ignore')})
+
+                except Exception as e:
+                    log_system_event(f"T3 Error Error: {e}")
+                finally:
+                    client_socket.close()
+                    t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - disconnection", "ip": get_geoip(ip), "port": port})
+
+            except socket.error:
+                break
+
+
+    
+def main():
+    """
+    Main function to start the honeypot services.
+    """
+    try:
+        # Start Flask apps on different ports
+        for port, app in apps.items():
+            use_ssl = port == 8443  # Enable SSL only for port 8443
+            threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
+            log_system_event(f"Started Flask app on port {port} (SSL: {use_ssl})")
+
+        # Start T3 protocol simulation
+        t3_thread = threading.Thread(target=t3_handshake_sim, args=(7001,), daemon=True)
+        t3_thread.start()
+        log_system_event("Started T3 protocol simulation on port 7001")
+
+        # Keep the main thread alive
+        while True:
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        log_system_event("Shutting down honeypot...")
+        stop_threads.set()
+        log_system_event("Honeypot services stopped.")
 
 if __name__ == "__main__":
-    for port, app in apps.items():
-        use_ssl = (port == 443)  # Use SSL only on port 443
-        threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
-    t3_handshake_sim(port=7001)
+    main()

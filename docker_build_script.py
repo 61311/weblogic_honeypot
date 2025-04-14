@@ -21,7 +21,7 @@ def file_hash(filepath):
 def stop_and_remove_existing_container(container_name):
     """Stop and remove an existing container if it is running or stopped."""
     try:
-        # Check for running container
+# Check for running container
         result = subprocess.run(["docker", "ps", "-q", "-f", f"name={container_name}"], capture_output=True, text=True)
         container_id = result.stdout.strip()
 
@@ -90,11 +90,11 @@ def main():
     {new_image_tag}
     """
 
-    try:
+try:
         result = subprocess.run(docker_run_cmd, shell=True, capture_output=True, text=True, check=True)
         print(f"New container started with image: {new_image_tag}")
         print(f"Docker run output: {result.stdout}")
-    except subprocess.CalledProcessError as e:
+except subprocess.CalledProcessError as e:
         print(f"Error starting container: {e.stderr}")
         print("Please check the Docker logs for more details.")
 
