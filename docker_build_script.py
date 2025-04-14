@@ -90,9 +90,13 @@ def main():
     {new_image_tag}
     """
 
-    subprocess.run(docker_run_cmd, shell=True, check=True)
-
-    print(f"New container started with image: {new_image_tag}")
+    try:
+        result = subprocess.run(docker_run_cmd, shell=True, capture_output=True, text=True, check=True)
+        print(f"New container started with image: {new_image_tag}")
+        print(f"Docker run output: {result.stdout}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error starting container: {e.stderr}")
+        print("Please check the Docker logs for more details.")
 
 if __name__ == "__main__":
     main()
