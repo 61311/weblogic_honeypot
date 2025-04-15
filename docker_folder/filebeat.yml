@@ -5,17 +5,8 @@ filebeat.inputs:
     paths:
       - /app/logs/*.log
     json.keys_under_root: true
-    json.overwrite_keys: true
-    json.message_key: "message"
-    multiline.pattern: '^{'
-    multiline.negate: true
-    multiline.match: after
+    json.add_error_key: true
 
-processors:
-  - timestamp:
-      field: timestamp
-      layouts:
-        - '2006-01-02T15:04:05.000000Z07:00'
 
 # ILM must be enabled for data streams
 setup.ilm.enabled: true
@@ -28,8 +19,9 @@ output.elasticsearch:
   username: "elastic"
   password: "<your-password>"
   ssl.verification_mode: none
+  pipeline: "honeypot-pipeline"
 
 # Use data stream routing
 output.elasticsearch.indices:
-  - index: "honeypot-logs"
-    pipeline: "honeypot-ecs-pipeline"
+  - index: "honeypot-logs"  
+    pipeline: "honeypot-pipeline"
