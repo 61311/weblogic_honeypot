@@ -33,8 +33,8 @@ def log_event(logger, level, message, ecs_fields):
         **ecs_fields
     }
     if level == 'info':
-        logger.info(json.dumps(log_entry))
+        logger.info(log_entry)
     elif level == 'error':
-        logger.error(json.dumps(log_entry))
+        logger.error(log_entry)
     elif level == 'warning':
-        logger.warning(json.dumps(log_entry))
+        logger.warning(log_entry)
