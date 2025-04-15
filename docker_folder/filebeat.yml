@@ -13,6 +13,7 @@ setup.ilm.enabled: true
 
 # Remove all template.name / pattern — Filebeat will use data stream templates
 setup.template.enabled: true
+setup.template.priority: 200
 
 output.elasticsearch:
   hosts: ["https://10.0.0.135:9200"]

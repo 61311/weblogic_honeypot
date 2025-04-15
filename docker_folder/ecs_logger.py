@@ -6,9 +6,9 @@ class ECSFormatter(logging.Formatter):
     def format(self, record):
         # Ensure the log record is serialized as a clean JSON object
         log_record = {
-            "@timestamp": record.created,
+            "@timestamp": datetime.utcfromtimestamp(record.created).isoformat() + "Z",
             "log.level": record.levelname.lower(),
-            "message": record.getMessage(),
+            "message": json.loads(record.getMessage()) if isinstance(record.getMessage(), str) and record.getMessage().startswith('{') else record.getMessage(),
             "event.dataset": record.__dict__.get("event_dataset", "default")
         }
         return json.dumps(log_record)
