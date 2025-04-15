@@ -7,7 +7,8 @@ filebeat.inputs:
     json.keys_under_root: true
     json.add_error_key: true
 
-
+logging.level: debug
+logging.selectors: ["*"]
 # ILM must be enabled for data streams
 setup.ilm.enabled: true
 

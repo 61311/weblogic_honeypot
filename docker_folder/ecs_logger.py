@@ -9,9 +9,12 @@ class ECSFormatter(logging.Formatter):
             "@timestamp": datetime.utcfromtimestamp(record.created).isoformat() + "Z",
             "log.level": record.levelname.lower(),
             "message": json.loads(record.getMessage()) if isinstance(record.getMessage(), str) and record.getMessage().startswith('{') else record.getMessage(),
-            "event.dataset": record.__dict__.get("event_dataset", "default"),
+            "event.dataset": record.__dict__.get("event_dataset", None),
             "log.file.path": record.__dict__.get("log_file_path", "unknown")
         }
+        # Remove event.dataset if it's None to avoid conflicts
+        if log_record["event.dataset"] is None:
+            del log_record["event.dataset"]
         return json.dumps(log_record)
 
 # Initialize loggers
