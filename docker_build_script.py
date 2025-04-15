@@ -52,22 +52,6 @@ def main():
     # Pull latest code
     subprocess.run(["git", "pull"], check=True)
 
-    # Check if app-v1.py has changed
-    src_file = os.path.join(GIT_REPO_PATH, TARGET_FILE)
-    dst_file = os.path.join(DOCKER_BUILD_DIR, TARGET_FILE)
-
-    old_hash = file_hash(dst_file)
-    new_hash = file_hash(src_file)
-
-    if not args.force and old_hash == new_hash:
-        print("No changes detected in app-v1.py.")
-        return
-
-    print("Changes detected or --force flag used. Updating Docker container...")
-
-    # Copy updated file to docker_build
-    shutil.copy2(src_file, dst_file)
-
     # Create a new Docker image with build date/time in the name
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     new_image_tag = f"{CONTAINER_BASE_NAME}:{timestamp}"
