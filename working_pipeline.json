@@ -1,0 +1,60 @@
+PUT _ingest/pipeline/honeypot-pipeline
+{
+  "description": "Dispatcher with loose match, debug markers, and fallback logging",
+  "processors": [
+    {
+      "set": {
+        "field": "debug.dispatcher_stage",
+        "value": "entered"
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "honeypot.general",
+        "if": "ctx.log.file.path == '/app/logs/general_events.log'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "honeypot.t3",
+        "if": "ctx.log.file.path == '/app/logs/t3_events.log'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "honeypot.exploit",
+        "if": "ctx.log.file.path == '/app/logs/exploit_events.log'"
+      }
+    },
+    {
+      "set": {
+        "field": "event.dataset",
+        "value": "honeypot.system",
+        "if": "ctx.log.file.path == '/app/logs/system.log'"
+      }
+    },
+    {
+      "json": {
+        "field": "message",
+        "add_to_root": true,
+        "ignore_failure": false
+      }
+    },
+    {
+      "date": {
+        "field": "@timestamp",
+        "formats": ["strict_date_optional_time", "yyyy-MM-dd'T'HH:mm:ss.SSSZ"],
+        "ignore_failure": false
+      }
+    },
+    {
+      "set": {
+        "field": "debug.dispatcher_stage",
+        "value": "exit"
+      }
+    }
+  ]
+}
