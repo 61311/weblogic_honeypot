@@ -39,14 +39,27 @@ PUT _ingest/pipeline/honeypot-pipeline
     {
       "json": {
         "field": "message",
+        "target_field": "message_parsed",
+        "ignore_failure": true
+      }
+    },
+    {
+      "json": {
+        "field": "message_parsed.text",
         "add_to_root": true,
-        "ignore_failure": false
+        "ignore_failure": true
       }
     },
     {
       "remove": {
         "field": "message",
-        "ignore_failure": false
+        "ignore_failure": true
+      }
+    },
+    {
+      "remove": {
+        "field": "message_parsed",
+        "ignore_failure": true
       }
     },
     {

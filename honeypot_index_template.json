@@ -23,6 +23,9 @@
           "type": "object",
           "enabled": true
         },
+        "text": {
+          "type": "text"
+        },
         "geoip": {
           "properties": {
             "ip": {

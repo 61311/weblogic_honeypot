@@ -6,6 +6,10 @@ filebeat.inputs:
       - /app/logs/*.log
     json.keys_under_root: false
     json.add_error_key: true
+    multiline:
+      pattern: '^\{'  # Match lines starting with '{' (JSON logs)
+      negate: true
+      match: after
 
 logging.level: debug
 logging.selectors: ["*"]

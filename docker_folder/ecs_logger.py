@@ -8,7 +8,7 @@ class ECSFormatter(logging.Formatter):
         log_record = {
             "@timestamp": datetime.utcfromtimestamp(record.created).isoformat() + "Z",
             "log.level": record.levelname.lower(),
-            "message": json.dumps({"text": record.getMessage()}) if not record.getMessage().startswith('{') else json.loads(record.getMessage()),
+            "message": json.loads(record.getMessage()) if isinstance(record.getMessage(), str) and record.getMessage().startswith('{') else {"text": record.getMessage()},
             "event.dataset": record.__dict__.get("event_dataset", None),
             "log.file.path": record.__dict__.get("log_file_path", "unknown")
         }
