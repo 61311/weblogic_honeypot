@@ -1,40 +1,38 @@
 import logging
 import json
-from pythonjsonlogger import jsonlogger
 from datetime import datetime
 
-# Configure ECS-compliant JSON logger
-def configure_logger(name, log_file, level=logging.INFO):
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
+class ECSFormatter(logging.Formatter):
+    def format(self, record):
+        # Ensure the log record is serialized as a clean JSON object
+        log_record = {
+            "@timestamp": record.created,
+            "log.level": record.levelname.lower(),
+            "message": record.getMessage(),
+            "event.dataset": record.__dict__.get("event_dataset", "default")
+        }
+        return json.dumps(log_record)
 
-    handler = logging.FileHandler(log_file)
-    formatter = jsonlogger.JsonFormatter(
-        fmt='%(asctime)s %(levelname)s %(message)s',
-        json_ensure_ascii=False
-    )
-    handler.setFormatter(formatter)
+# Initialize loggers
+system_logger = logging.getLogger("system_logger")
+general_logger = logging.getLogger("general_logger")
+exploit_logger = logging.getLogger("exploit_logger")
+t3_logger = logging.getLogger("t3_logger")
+
+# Set log level and handlers for each logger
+for logger in [system_logger, general_logger, exploit_logger, t3_logger]:
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setFormatter(ECSFormatter())
     logger.addHandler(handler)
 
-    return logger
-
-# Create loggers
-system_logger = configure_logger('system', 'logs/system.log')
-general_logger = configure_logger('general_events', 'logs/general_events.log')
-exploit_logger = configure_logger('exploit_events', 'logs/exploit_events.log')
-t3_logger = configure_logger('t3_events', 'logs/t3_events.log')
-
-# Helper function for ECS-compliant log entries
-def log_event(logger, level, message, ecs_fields):
-    log_entry = {
-        "@timestamp": datetime.utcnow().isoformat(),
-        "log.level": level,
-        "message": message,
-        **ecs_fields
-    }
+def log_event(logger, level, message, extra):
+    # Add extra fields to the log record
+    extra = extra or {}
+    logger_adapter = logging.LoggerAdapter(logger, extra)
     if level == 'info':
-        logger.info(log_entry)
+        logger_adapter.info(message)
     elif level == 'error':
-        logger.error(log_entry)
+        logger_adapter.error(message)
     elif level == 'warning':
-        logger.warning(log_entry)
+        logger_adapter.warning(message)

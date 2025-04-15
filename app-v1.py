@@ -56,35 +56,6 @@ general_events_log_file = os.path.join(log_dir, 'general_events.log')
 exploit_events_log_file = os.path.join(log_dir, 'exploit_events.log')
 t3_events_log_file = os.path.join(log_dir, 't3_events.log')
 
-# Configure system logger
-system_logger = logging.getLogger('system')
-system_logger.setLevel(logging.INFO)
-system_handler = logging.FileHandler(system_log_file)
-system_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-system_logger.addHandler(system_handler)
-
-# Configure general events logger
-general_logger = logging.getLogger('general_events')
-general_logger.setLevel(logging.INFO)
-general_handler = logging.FileHandler(general_events_log_file)
-general_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-general_logger.addHandler(general_handler)
-
-# Configure exploit events logger
-exploit_logger = logging.getLogger('exploit_events')
-exploit_logger.setLevel(logging.INFO)
-exploit_handler = logging.FileHandler(exploit_events_log_file)
-exploit_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-exploit_logger.addHandler(exploit_handler)
-
-# Configure T3 events logger
-
-t3_logger = logging.getLogger('t3_events')
-t3_logger.setLevel(logging.INFO)
-t3_handler = logging.FileHandler(t3_events_log_file)
-t3_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-t3_logger.addHandler(t3_handler)
-
 # Function to log system events
 
 def log_system_event(message, level='info'):
