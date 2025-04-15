@@ -18,6 +18,7 @@ from defusedxml.ElementTree import parse as secure_parse
 from defusedxml.ElementTree import ParseError
 import xmlschema
 import urllib.parse
+from ecs_logger import system_logger, general_logger, exploit_logger, t3_logger, log_event
 
 
 
@@ -88,11 +89,11 @@ t3_logger.addHandler(t3_handler)
 
 def log_system_event(message, level='info'):
     if level == 'info':
-        system_logger.info(message)
+        log_event(system_logger, 'info', message, {"event.dataset": "system"})
     elif level == 'error':
-        system_logger.error(message)
+        log_event(system_logger, 'error', message, {"event.dataset": "system"})
     elif level == 'warning':
-        system_logger.warning(message)
+        log_event(system_logger, 'warning', message, {"event.dataset": "system"})
 
 
 # Constants
@@ -128,15 +129,15 @@ def validate_and_secure_xml(xml_file, xsd_file=None):
     - Optionally validates against an XSD schema.
     """
     if not is_secure_and_well_formed_xml(xml_file):
-        system_logger.error(f"XML file {xml_file} failed security or well-formedness checks.")
+        log_event(system_logger, 'error', f"XML file {xml_file} failed security or well-formedness checks.", {"event.dataset": "system"})
         return False
 
     if xsd_file:
         if not validate_xml_with_xsd(xml_file, xsd_file):
-            system_logger.error(f"XML file {xml_file} failed schema validation.")
+            log_event(system_logger, 'error', f"XML file {xml_file} failed schema validation.", {"event.dataset": "system"})
             return False
 
-    system_logger.info(f"XML file {xml_file} passed all checks.")
+    log_event(system_logger, 'info', f"XML file {xml_file} passed all checks.", {"event.dataset": "system"})
     return True
 
 # Validate Ingest XML is XML
@@ -147,13 +148,13 @@ def is_secure_and_well_formed_xml(xml_file):
     """
     try:
         secure_parse(xml_file)
-        system_logger.info(f"XML file {xml_file} is well-formed and secure.")
+        log_event(system_logger, 'info', f"XML file {xml_file} is well-formed and secure.", {"event.dataset": "system"})
         return True
     except ParseError as e:
-        system_logger.error(f"XML parsing error: {e}")
+        log_event(system_logger, 'error', f"XML parsing error: {e}", {"event.dataset": "system"})
         return False
     except Exception as e:
-        system_logger.error(f"Unexpected error while parsing XML: {e}")
+        log_event(system_logger, 'error', f"Unexpected error while parsing XML: {e}", {"event.dataset": "system"})
         return False
     
 def validate_xml_with_xsd(xml_file, xsd_file):
@@ -163,13 +164,13 @@ def validate_xml_with_xsd(xml_file, xsd_file):
     try:
         schema = xmlschema.XMLSchema(xsd_file)
         schema.validate(xml_file)
-        system_logger.info(f"XML file {xml_file} is valid against schema {xsd_file}.")
+        log_event(system_logger, 'info', f"XML file {xml_file} is valid against schema {xsd_file}.", {"event.dataset": "system"})
         return True
     except xmlschema.exceptions.XMLSchemaValidationError as e:
-        system_logger.error(f"XML validation error: {e}")
+        log_event(system_logger, 'error', f"XML validation error: {e}", {"event.dataset": "system"})
         return False
     except Exception as e:
-        system_logger.error(f"Unexpected error during XML schema validation: {e}")
+        log_event(system_logger, 'error', f"Unexpected error during XML schema validation: {e}", {"event.dataset": "system"})
         return False
 
 # List of CVE and other security related items that will be emulated
@@ -431,7 +432,7 @@ def download_remote_xml_from_payload(payload_str):
     if match:
         url = match.group(1)
         try:
-            system_logger.info(f"[*] Attempting to download XML from {url}")
+            log_event(system_logger, 'info', f"[*] Attempting to download XML from {url}", {"event.dataset": "system"})
             response = requests.get(url, timeout=10)
             response.raise_for_status()
 
@@ -440,18 +441,18 @@ def download_remote_xml_from_payload(payload_str):
             with open(filename, 'wb') as f:
                 f.write(response.content)
 
-            system_logger.info(f"[+] Saved remote XML to {filename}")
+            log_event(system_logger, 'info', f"[+] Saved remote XML to {filename}", {"event.dataset": "system"})
 
             # Validate and secure the XML
             xsd_file = "schema.xsd"  # Replace with your actual schema file path
             if not validate_and_secure_xml(filename, xsd_file):
-                system_logger.error(f"XML file {filename} failed validation or security checks.")
+                log_event(system_logger, 'error', f"XML file {filename} failed validation or security checks.", {"event.dataset": "system"})
             else:
-                system_logger.info(f"XML file {filename} passed all validation and security checks.")
+                log_event(system_logger, 'info', f"XML file {filename} passed all validation and security checks.", {"event.dataset": "system"})
         except requests.exceptions.RequestException as e:
-            system_logger.error(f"[!] Failed to fetch remote XML from {url}: {e}")
+            log_event(system_logger, 'error', f"[!] Failed to fetch remote XML from {url}: {e}", {"event.dataset": "system"})
         except Exception as e:
-            system_logger.error(f"Unexpected error while downloading XML: {e}")
+            log_event(system_logger, 'error', f"Unexpected error while downloading XML: {e}", {"event.dataset": "system"})
 
 # For POST extract payloads 
 
@@ -467,7 +468,7 @@ def extract_payload(request):
         try:
             payloads["body"] = request.data.decode(errors="ignore")
         except Exception as e:
-            system_logger.error(f"Error decoding request body: {e}")
+            log_event(system_logger, 'error', f"Error decoding request body: {e}", {"event.dataset": "system"})
 
     # Extract form data
     if request.form:
@@ -480,7 +481,7 @@ def extract_payload(request):
                 handle_payload = form_data['handle']
                 download_remote_xml_from_payload(handle_payload)
         except Exception as e:
-            system_logger.error(f"Error extracting form data: {e}")
+            log_event(system_logger, 'error', f"Error extracting form data: {e}", {"event.dataset": "system"})
 
     # Extract JSON data
     try:
@@ -488,14 +489,14 @@ def extract_payload(request):
         if json_data:
             payloads["json"] = json_data
     except Exception as e:
-        system_logger.error(f"Error parsing JSON data: {e}")
+        log_event(system_logger, 'error', f"Error parsing JSON data: {e}", {"event.dataset": "system"})
 
     # Extract query parameters
     if request.args:
         try:
             payloads["query"] = request.args.to_dict()
         except Exception as e:
-            system_logger.error(f"Error extracting query parameters: {e}")
+            log_event(system_logger, 'error', f"Error extracting query parameters: {e}", {"event.dataset": "system"})
 
     # Decode Base64 and URL-encoded payloads
     for key, value in payloads.items():
@@ -515,7 +516,7 @@ def extract_payload(request):
                 pass  # Ignore errors for non-URL-encoded strings
 
     # Log extracted payloads for debugging
-    system_logger.info(f"Extracted payloads: {json.dumps(payloads, indent=4)}")
+    log_event(system_logger, 'info', f"Extracted payloads: {json.dumps(payloads, indent=4)}", {"event.dataset": "system"})
 
     return payloads
 
@@ -525,7 +526,7 @@ def save_payload(ip, data):
         filename = f"payloads/{ip}_{int(time.time())}.txt"  
         with open(filename, "w") as f:  
             json.dump(data, f, indent=4)  
-        system_logger.info(f"[PAYLOAD SAVED] {filename}")
+        log_event(system_logger, 'info', f"[PAYLOAD SAVED] {filename}", {"event.dataset": "system"})
 
 # Look up Locations 
 def get_geoip(ip_address):
@@ -569,7 +570,7 @@ def log_mal_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    exploit_logger.info(json.dumps(log_entry))
+    log_event(exploit_logger, 'info', json.dumps(log_entry), {"event.dataset": "exploit_events"})
 
 # Log General Connection to none exploitable paths 
 
@@ -581,7 +582,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    general_logger.info(json.dumps(log_entry))
+    log_event(general_logger, 'info', json.dumps(log_entry), {"event.dataset": "general_events"})
 
 
 # Processing of Request/Response
@@ -632,7 +633,7 @@ def process_input(path: str, request: Request) -> Response:
     save_payload(ip, payload_data)
     directory_path = 'source/oam/pages'
     if not os.path.exists(directory_path):
-        system_logger.error(f"Directory not found: {directory_path}")
+        log_event(system_logger, 'error', f"Directory not found: {directory_path}", {"event.dataset": "system"})
         return Response("Internal Server Error: Directory not found", status=500)
     return send_from_directory(directory_path, 'login.html')
 
@@ -664,13 +665,10 @@ for port, app in apps.items():
             password = data['password']
             ip = request.remote_addr
             event_details = f"Captured credentials - Username: {username}, Password: {password}"
-
-            log_gen_event("credential_capture", ip, event_details)
-            general_logger.info(f"Captured credentials from {ip}: {event_details}")
-
+            log_event(general_logger, 'info', f"Captured credentials from {ip}: {event_details}", {"event.dataset": "general_events"})
             return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
         except Exception as e:
-            system_logger.error(f"Error logging credentials: {str(e)}")
+            log_event(system_logger, 'error', f"Error logging credentials: {str(e)}", {"event.dataset": "system"})
             return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
@@ -738,9 +736,9 @@ def log_t3_event(event_type, ip, port, extra=None):
     if extra:
         log_entry.update(extra)
     try:
-        t3_logger.info(json.dumps(log_entry, default=str))
+        log_event(t3_logger, 'info', json.dumps(log_entry, default=str), {"event.dataset": "t3_events"})
     except Exception as e:
-        t3_logger.error(f"Failed to log T3 event: {e}")
+        log_event(t3_logger, 'error', f"Failed to log T3 event: {e}", {"event.dataset": "t3_events"})
 
 def t3_handshake_sim(port=7001):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
