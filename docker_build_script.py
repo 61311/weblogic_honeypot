@@ -7,7 +7,7 @@ import argparse
 import time
 
 # --- Configuration ---
-GIT_REPO_PATH = "/home/opc/honeypot/"
+GIT_REPO_PATH = "/home/opc/honeypot/docker_folder"
 DOCKER_BUILD_DIR = "/home/opc/honeypot/docker_folder"
 TARGET_FILE = "app-v1.py"
 CONTAINER_BASE_NAME = "weblogic_honeypot"
