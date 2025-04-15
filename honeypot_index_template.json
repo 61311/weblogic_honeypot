@@ -1,0 +1,61 @@
+{
+  "index_patterns": ["honeypot-logs-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "log.level": {
+          "type": "keyword"
+        },
+        "event.dataset": {
+          "type": "keyword"
+        },
+        "log.file.path": {
+          "type": "keyword"
+        },
+        "message": {
+          "type": "object",
+          "enabled": true
+        },
+        "geoip": {
+          "properties": {
+            "ip": {
+              "type": "ip"
+            },
+            "hostname": {
+              "type": "keyword"
+            },
+            "geo_info": {
+              "properties": {
+                "country": {
+                  "type": "keyword"
+                },
+                "region": {
+                  "type": "keyword"
+                },
+                "city": {
+                  "type": "keyword"
+                },
+                "latitude": {
+                  "type": "float"
+                },
+                "longitude": {
+                  "type": "float"
+                }
+              }
+            },
+            "isp": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
