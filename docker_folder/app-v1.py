@@ -18,6 +18,7 @@ from defusedxml.ElementTree import parse as secure_parse
 from defusedxml.ElementTree import ParseError
 import xmlschema
 import urllib.parse
+from ecs_logger import system_logger, general_logger, exploit_logger, t3_logger, log_event
 
 
 
@@ -55,44 +56,10 @@ general_events_log_file = os.path.join(log_dir, 'general_events.log')
 exploit_events_log_file = os.path.join(log_dir, 'exploit_events.log')
 t3_events_log_file = os.path.join(log_dir, 't3_events.log')
 
-# Configure system logger
-system_logger = logging.getLogger('system')
-system_logger.setLevel(logging.INFO)
-system_handler = logging.FileHandler(system_log_file)
-system_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-system_logger.addHandler(system_handler)
-
-# Configure general events logger
-general_logger = logging.getLogger('general_events')
-general_logger.setLevel(logging.INFO)
-general_handler = logging.FileHandler(general_events_log_file)
-general_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-general_logger.addHandler(general_handler)
-
-# Configure exploit events logger
-exploit_logger = logging.getLogger('exploit_events')
-exploit_logger.setLevel(logging.INFO)
-exploit_handler = logging.FileHandler(exploit_events_log_file)
-exploit_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-exploit_logger.addHandler(exploit_handler)
-
-# Configure T3 events logger
-
-t3_logger = logging.getLogger('t3_events')
-t3_logger.setLevel(logging.INFO)
-t3_handler = logging.FileHandler(t3_events_log_file)
-t3_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-t3_logger.addHandler(t3_handler)
-
 # Function to log system events
 
 def log_system_event(message, level='info'):
-    if level == 'info':
-        system_logger.info(message)
-    elif level == 'error':
-        system_logger.error(message)
-    elif level == 'warning':
-        system_logger.warning(message)
+    pass
 
 
 # Constants
@@ -128,15 +95,12 @@ def validate_and_secure_xml(xml_file, xsd_file=None):
     - Optionally validates against an XSD schema.
     """
     if not is_secure_and_well_formed_xml(xml_file):
-        system_logger.error(f"XML file {xml_file} failed security or well-formedness checks.")
         return False
 
     if xsd_file:
         if not validate_xml_with_xsd(xml_file, xsd_file):
-            system_logger.error(f"XML file {xml_file} failed schema validation.")
             return False
 
-    system_logger.info(f"XML file {xml_file} passed all checks.")
     return True
 
 # Validate Ingest XML is XML
@@ -147,13 +111,10 @@ def is_secure_and_well_formed_xml(xml_file):
     """
     try:
         secure_parse(xml_file)
-        system_logger.info(f"XML file {xml_file} is well-formed and secure.")
         return True
     except ParseError as e:
-        system_logger.error(f"XML parsing error: {e}")
         return False
     except Exception as e:
-        system_logger.error(f"Unexpected error while parsing XML: {e}")
         return False
     
 def validate_xml_with_xsd(xml_file, xsd_file):
@@ -163,13 +124,10 @@ def validate_xml_with_xsd(xml_file, xsd_file):
     try:
         schema = xmlschema.XMLSchema(xsd_file)
         schema.validate(xml_file)
-        system_logger.info(f"XML file {xml_file} is valid against schema {xsd_file}.")
         return True
     except xmlschema.exceptions.XMLSchemaValidationError as e:
-        system_logger.error(f"XML validation error: {e}")
         return False
     except Exception as e:
-        system_logger.error(f"Unexpected error during XML schema validation: {e}")
         return False
 
 # List of CVE and other security related items that will be emulated
@@ -431,7 +389,6 @@ def download_remote_xml_from_payload(payload_str):
     if match:
         url = match.group(1)
         try:
-            system_logger.info(f"[*] Attempting to download XML from {url}")
             response = requests.get(url, timeout=10)
             response.raise_for_status()
 
@@ -440,18 +397,15 @@ def download_remote_xml_from_payload(payload_str):
             with open(filename, 'wb') as f:
                 f.write(response.content)
 
-            system_logger.info(f"[+] Saved remote XML to {filename}")
-
-            # Validate and secure the XML
             xsd_file = "schema.xsd"  # Replace with your actual schema file path
             if not validate_and_secure_xml(filename, xsd_file):
-                system_logger.error(f"XML file {filename} failed validation or security checks.")
+                pass
             else:
-                system_logger.info(f"XML file {filename} passed all validation and security checks.")
+                pass
         except requests.exceptions.RequestException as e:
-            system_logger.error(f"[!] Failed to fetch remote XML from {url}: {e}")
+            pass
         except Exception as e:
-            system_logger.error(f"Unexpected error while downloading XML: {e}")
+            pass
 
 # For POST extract payloads 
 
@@ -467,7 +421,7 @@ def extract_payload(request):
         try:
             payloads["body"] = request.data.decode(errors="ignore")
         except Exception as e:
-            system_logger.error(f"Error decoding request body: {e}")
+            pass
 
     # Extract form data
     if request.form:
@@ -480,7 +434,7 @@ def extract_payload(request):
                 handle_payload = form_data['handle']
                 download_remote_xml_from_payload(handle_payload)
         except Exception as e:
-            system_logger.error(f"Error extracting form data: {e}")
+            pass
 
     # Extract JSON data
     try:
@@ -488,14 +442,14 @@ def extract_payload(request):
         if json_data:
             payloads["json"] = json_data
     except Exception as e:
-        system_logger.error(f"Error parsing JSON data: {e}")
+        pass
 
     # Extract query parameters
     if request.args:
         try:
             payloads["query"] = request.args.to_dict()
         except Exception as e:
-            system_logger.error(f"Error extracting query parameters: {e}")
+            pass
 
     # Decode Base64 and URL-encoded payloads
     for key, value in payloads.items():
@@ -514,9 +468,6 @@ def extract_payload(request):
             except Exception:
                 pass  # Ignore errors for non-URL-encoded strings
 
-    # Log extracted payloads for debugging
-    system_logger.info(f"Extracted payloads: {json.dumps(payloads, indent=4)}")
-
     return payloads
 
 # Save payloads separately for analysis  
@@ -525,7 +476,6 @@ def save_payload(ip, data):
         filename = f"payloads/{ip}_{int(time.time())}.txt"  
         with open(filename, "w") as f:  
             json.dump(data, f, indent=4)  
-        system_logger.info(f"[PAYLOAD SAVED] {filename}")
 
 # Look up Locations 
 def get_geoip(ip_address):
@@ -569,7 +519,7 @@ def log_mal_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    exploit_logger.info(json.dumps(log_entry))
+    log_event(exploit_logger, 'info', json.dumps(log_entry), {"event.dataset": "exploit_events", "log_file_path": exploit_events_log_file})
 
 # Log General Connection to none exploitable paths 
 
@@ -581,7 +531,7 @@ def log_gen_event(event_type, ip, details):
         "geoip": get_geoip(ip),
         "details": details
     }
-    general_logger.info(json.dumps(log_entry))
+    log_event(general_logger, 'info', json.dumps(log_entry), {"event.dataset": "general_events", "log_file_path": general_events_log_file})
 
 
 # Processing of Request/Response
@@ -632,7 +582,6 @@ def process_input(path: str, request: Request) -> Response:
     save_payload(ip, payload_data)
     directory_path = 'source/oam/pages'
     if not os.path.exists(directory_path):
-        system_logger.error(f"Directory not found: {directory_path}")
         return Response("Internal Server Error: Directory not found", status=500)
     return send_from_directory(directory_path, 'login.html')
 
@@ -664,13 +613,17 @@ for port, app in apps.items():
             password = data['password']
             ip = request.remote_addr
             event_details = f"Captured credentials - Username: {username}, Password: {password}"
-
-            log_gen_event("credential_capture", ip, event_details)
-            general_logger.info(f"Captured credentials from {ip}: {event_details}")
-
+            log_entry = {
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "event_type": "credentials_captured",
+                "source_ip": ip,
+                "geoip": get_geoip(ip),
+                "username": username,
+                "password": password
+            }
+            log_event(general_logger, 'info', json.dumps(log_entry), {"event.dataset": "general_events", "log_file_path": general_events_log_file})
             return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
         except Exception as e:
-            system_logger.error(f"Error logging credentials: {str(e)}")
             return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
@@ -727,43 +680,55 @@ def run_flask_app(app, port, use_ssl=False):
     else:
         app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
+def log_t3_event(event_type, ip, port, extra=None):
+    log_entry = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "event_type": event_type,
+        "source_ip": ip,
+        "geoip": get_geoip(ip),
+        "port": port
+    }
+    if extra:
+        log_entry.update(extra)
+    log_event(t3_logger, 'info', json.dumps(log_entry), {"event.dataset": "t3_events", "log_file_path": t3_events_log_file})
+
 def t3_handshake_sim(port=7001):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind(("0.0.0.0", port))
         server_socket.listen(5)
-        log_system_event(f"[*] T3 honeypot listening on port {port}")
 
         while not stop_threads.is_set():
             try:
                 client_socket, addr = server_socket.accept()
                 ip = addr[0]
-                t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - connection", "ip": get_geoip(ip), "port": port})
+                log_t3_event("t3 protocol - connection", ip, port)
 
                 try:
                     data = client_socket.recv(1024)
                     if b"\xac\xed\x00\x05" in data:
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data": data.hex()})
+                        log_t3_event("t3 protocol - decode", ip, port, {"data": data.hex()})
 
                     decoded = data.decode(errors='ignore')
 
                     if decoded.startswith("t3"):
                         response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
                         client_socket.sendall(response.encode())
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - sent_response", "ip": get_geoip(ip), "port": port})
-
+                        log_t3_event("t3 protocol - sent_response", ip, port)
                     else:
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - unexpected data", "ip": get_geoip(ip), "port": port})
+                        log_t3_event("t3 protocol - unexpected data", ip, port)
 
                     payload = client_socket.recv(4096)
                     if payload:
-                        t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - decode", "ip": get_geoip(ip), "port": port, "data":  payload.decode(errors='ignore')})
+                        log_t3_event("t3 protocol - decode", ip, port, {
+                            "data": payload.decode(errors='ignore')
+                        })
 
                 except Exception as e:
-                    log_system_event(f"T3 Error Error: {e}")
+                    pass
                 finally:
                     client_socket.close()
-                    t3_logger.info({"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),"event_type": "t3 protocol - disconnection", "ip": get_geoip(ip), "port": port})
+                    log_t3_event("t3 protocol - disconnection", ip, port)
 
             except socket.error:
                 break
@@ -779,21 +744,17 @@ def main():
         for port, app in apps.items():
             use_ssl = port == 8443  # Enable SSL only for port 8443
             threading.Thread(target=run_flask_app, args=(app, port, use_ssl), daemon=True).start()
-            log_system_event(f"Started Flask app on port {port} (SSL: {use_ssl})")
 
         # Start T3 protocol simulation
         t3_thread = threading.Thread(target=t3_handshake_sim, args=(7001,), daemon=True)
         t3_thread.start()
-        log_system_event("Started T3 protocol simulation on port 7001")
 
         # Keep the main thread alive
         while True:
             time.sleep(1)
 
     except KeyboardInterrupt:
-        log_system_event("Shutting down honeypot...")
         stop_threads.set()
-        log_system_event("Honeypot services stopped.")
 
 if __name__ == "__main__":
     main()

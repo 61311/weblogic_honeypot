@@ -17,6 +17,7 @@ WORKDIR /app
 
 # Copy Python app and dependencies
 COPY app-v1.py /app/
+COPY ecs_logger.py /app/
 COPY requirements.txt /app/
 COPY source /app/source
 COPY cert.pem /app/

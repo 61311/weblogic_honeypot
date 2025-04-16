@@ -4,32 +4,30 @@ filebeat.inputs:
     enabled: true
     paths:
       - /app/logs/*.log
-    json.keys_under_root: true
-    json.overwrite_keys: true
-    json.message_key: "message"
-    multiline.pattern: '^{'
-    multiline.negate: true
-    multiline.match: after
+    json.keys_under_root: false
+    json.add_error_key: true
+    multiline:
+      pattern: '^\{'  # Match lines starting with '{' (JSON logs)
+      negate: true
+      match: after
 
-processors:
-  - timestamp:
-      field: timestamp
-      layouts:
-        - '2006-01-02T15:04:05.000000Z07:00'
-
+logging.level: debug
+logging.selectors: ["*"]
 # ILM must be enabled for data streams
 setup.ilm.enabled: true
 
 # Remove all template.name / pattern — Filebeat will use data stream templates
 setup.template.enabled: true
+setup.template.priority: 200
 
 output.elasticsearch:
   hosts: ["https://10.0.0.135:9200"]
   username: "elastic"
   password: "<your-password>"
   ssl.verification_mode: none
+  pipeline: "honeypot-pipeline"
 
 # Use data stream routing
 output.elasticsearch.indices:
-  - index: "honeypot-logs"
-    pipeline: "honeypot-ecs-pipeline"
+  - index: "honeypot-logs"  
+    pipeline: "honeypot-pipeline"
