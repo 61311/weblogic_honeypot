@@ -692,6 +692,24 @@ def log_t3_event(event_type, ip, port, extra=None):
         log_entry.update(extra)
     log_event(t3_logger, 'info', json.dumps(log_entry), {"event.dataset": "t3_events", "log_file_path": t3_events_log_file})
 
+import random
+
+def save_raw_t3(ip, raw_data):
+    os.makedirs("captures/t3", exist_ok=True)
+    filename = f"captures/t3/{ip}_{int(time.time())}.bin"
+    with open(filename, "wb") as f:
+        f.write(raw_data)
+
+def save_serialized_stream(ip, data):
+    marker = b"\xac\xed\x00\x05"
+    if marker in data:
+        start = data.find(marker)
+        stream = data[start:]
+        os.makedirs("captures/t3", exist_ok=True)
+        filename = f"captures/t3/serialized_{ip}_{int(time.time())}.ser"
+        with open(filename, "wb") as f:
+            f.write(stream)
+
 def t3_handshake_sim(port=7001):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -706,26 +724,77 @@ def t3_handshake_sim(port=7001):
 
                 try:
                     data = client_socket.recv(1024)
-                    if b"\xac\xed\x00\x05" in data:
-                        log_t3_event("t3 protocol - decode", ip, port, {"data": data.hex()})
+                    if not data:
+                        continue
+
+                    # Always log and save first packet
+                    log_t3_event("t3 protocol - received_raw", ip, port, {
+                        "hex_dump": data.hex(),
+                        "ascii": data.decode(errors='ignore')
+                    })
+                    save_raw_t3(ip, data)
+
+                    # Save Java serialized stream if present
+                    save_serialized_stream(ip, data)
 
                     decoded = data.decode(errors='ignore')
 
-                    if decoded.startswith("t3"):
-                        response = "HELO:12.2.1\nAS:2048\nHL:19\n\n"
-                        client_socket.sendall(response.encode())
-                        log_t3_event("t3 protocol - sent_response", ip, port)
-                    else:
-                        log_t3_event("t3 protocol - unexpected data", ip, port)
+                    # 🔁 HTTP/HTTPS redirect if detected
+                    if decoded.startswith(("GET", "POST", "HEAD", "HTTP", "OPTIONS", "PUT", "CONNECT")):
+                        log_t3_event("t3 protocol - http_probe_detected", ip, port, {
+                            "ascii": decoded
+                        })
+                        redirect_response = (
+                            f"HTTP/1.1 302 Found\r\n"
+                            f"Location: https://{ip}:8443/\r\n"
+                            f"Content-Length: 0\r\n"
+                            f"Connection: close\r\n\r\n"
+                        )
+                        client_socket.sendall(redirect_response.encode())
+                        continue
 
+                    # Simulate fake deserialization error
+                    if b"\xac\xed\x00\x05" in data:
+                        log_t3_event("t3 protocol - java_serialized_marker", ip, port)
+                        fake_error = b"Exception: java.lang.ClassNotFoundException: ysoserial.payloads.CommonsCollections1\n"
+                        client_socket.sendall(fake_error)
+
+                    # T3 handshake logic
+                    if decoded.startswith("t3"):
+                        weblogic_versions = ["12.2.1.4.0", "14.1.1.0", "12.1.3.0"]
+                        version = random.choice(weblogic_versions)
+                        asn = random.randint(1024, 32767)
+                        hl = random.randint(10, 50)
+                        ms = random.randint(500, 5000)
+
+                        response = f"HELO:{version}\nAS:{asn}\nHL:{hl}\nMS:{ms}\n\n"
+                        client_socket.sendall(response.encode())
+
+                        log_t3_event("t3 protocol - sent_helo", ip, port, {
+                            "version": version,
+                            "asn": asn,
+                            "hl": hl,
+                            "ms": ms
+                        })
+                    else:
+                        log_t3_event("t3 protocol - not_a_t3_handshake", ip, port)
+
+                    # Secondary payload read
                     payload = client_socket.recv(4096)
                     if payload:
-                        log_t3_event("t3 protocol - decode", ip, port, {
-                            "data": payload.decode(errors='ignore')
+                        log_t3_event("t3 protocol - secondary_payload", ip, port, {
+                            "hex_dump": payload.hex(),
+                            "ascii": payload.decode(errors='ignore')
                         })
+                        save_raw_t3(ip, payload)
+                        save_serialized_stream(ip, payload)
+
+                    # Hold connection open to simulate long-running session
+                    time.sleep(random.randint(10, 30))
 
                 except Exception as e:
-                    pass
+                    log_t3_event("t3 protocol - error", ip, port, {"error": str(e)})
+
                 finally:
                     client_socket.close()
                     log_t3_event("t3 protocol - disconnection", ip, port)
