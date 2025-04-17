@@ -739,25 +739,32 @@ def t3_handshake_sim(port=7001):
                         client_socket.close()
                         continue
 
-                    # 🔓 Fake Java deserialization failure
                     if b"\xac\xed\x00\x05" in data:
-                            log_t3_event("t3 protocol - java_serialized_marker", ip, port)
+                        log_t3_event("t3 protocol - java_serialized_marker", ip, port)
 
-                            fake_error = (
-                                b"Exception: java.lang.ClassNotFoundException: ysoserial.payloads.CommonsCollections1\n"
-                                b"at weblogic.rjvm.MsgAbbrevInputStream.readObject(MsgAbbrevInputStream.java:528)\n"
-                            )
+                        fake_error = (
+                            b"Exception: java.lang.ClassNotFoundException: ysoserial.payloads.CommonsCollections1\n"
+                            b"at weblogic.rjvm.MsgAbbrevInputStream.readObject(MsgAbbrevInputStream.java:528)\n"
+                        )
 
-                            try:
-                                client_socket.sendall(fake_error)
-                                log_t3_event("t3 protocol - sent_deserialization_error", ip, port, {
-                                    "error": "fake exception sent"
-                                })
-                            except Exception as e:
-                                log_t3_event("t3 protocol - send_error_failed", ip, port, {
-                                    "error": str(e)
-                                })
+                        try:
+                            client_socket.sendall(fake_error)
+                            log_t3_event("t3 protocol - sent_deserialization_error", ip, port)
 
+                            # Sleep briefly to simulate WebLogic processing
+                            time.sleep(random.uniform(1.0, 2.0))
+
+                            # Close connection to flush data and let test scripts pass
+                            client_socket.shutdown(socket.SHUT_WR)
+                            client_socket.close()
+
+                            log_t3_event("t3 protocol - closed_after_fake_error", ip, port)
+                            continue  # skip further handling
+
+                        except Exception as e:
+                            log_t3_event("t3 protocol - send_error_failed", ip, port, {"error": str(e)})
+                            client_socket.close()
+                            continue
 
                     # 🤝 Simulate a T3 handshake
                     if decoded.startswith("t3"):

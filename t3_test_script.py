@@ -20,12 +20,11 @@ def test_serialized_payload():
 
     payload = b"\xac\xed\x00\x05t\x00\x10TestSerializedObject\n"
 
-    with socket.create_connection((HONEYPOT_IP, T3_PORT), timeout=5) as s:
-        s.settimeout(3)
+    with socket.create_connection((HONEYPOT_IP, T3_PORT), timeout=10) as s:
+        s.settimeout(5)  # generous timeout for slow honeypot reply
         s.sendall(payload)
 
-        # Let the honeypot respond
-        time.sleep(1)
+        print("[*] Payload sent — waiting for response...")
 
         response_data = b""
         try:
@@ -35,17 +34,23 @@ def test_serialized_payload():
                     break
                 response_data += chunk
         except socket.timeout:
-            pass
+            print("[!] Timeout reached while waiting for response (normal if server holds open)")
+        except Exception as e:
+            print(f"[!] Unexpected socket error: {e}")
 
         response = response_data.decode(errors="ignore")
-        print("→ Raw response:\n", repr(response))
+        print("→ Raw response from server:")
+        print(repr(response))
+        print("→ Raw bytes received:\n", response_data.hex())
 
-        if "ClassNotFoundException" not in response:
-            print("[!] Expected deserialization error not found.")
-            print("[!] Full response dump:")
+        # Normalize and check
+        cleaned = response.replace("\r", "").replace("\n", "").lower()
+        if "classnotfoundexception" not in cleaned:
+            print("[!] Fake deserialization error not detected in response.")
+            print("[!] Full response for analysis:")
             print(response)
 
-        assert "ClassNotFoundException" in response, "Fake deserialization error not returned"
+        assert "classnotfoundexception" in cleaned, "Fake deserialization error not returned"
         print("[+] Serialized payload test passed.")
 
 
