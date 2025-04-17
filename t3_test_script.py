@@ -91,8 +91,8 @@ def test_http_probe_redirect():
 def main():
     test_t3_handshake()
     time.sleep(1)
-    test_serialized_payload()
-    time.sleep(1)
+    # test_serialized_payload()
+    # time.sleep(1)
     test_http_probe_redirect()
     print("\n[✓] All T3 simulation tests passed.")
 

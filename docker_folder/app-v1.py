@@ -694,6 +694,28 @@ def save_serialized_stream(ip, data):
         with open(filename, "wb") as f:
             f.write(stream)
 
+def get_public_ip():
+    try:
+        return requests.get("https://api.ipify.org").text.strip()
+    except Exception:
+        return "127.0.0.1"
+
+def save_raw_t3(ip, raw_data):
+    os.makedirs("captures/t3", exist_ok=True)
+    filename = f"captures/t3/{ip}_{int(time.time())}.bin"
+    with open(filename, "wb") as f:
+        f.write(raw_data)
+
+def save_serialized_stream(ip, data):
+    marker = b"\xac\xed\x00\x05"
+    if marker in data:
+        start = data.find(marker)
+        stream = data[start:]
+        os.makedirs("captures/t3", exist_ok=True)
+        filename = f"captures/t3/serialized_{ip}_{int(time.time())}.ser"
+        with open(filename, "wb") as f:
+            f.write(stream)
+
 def t3_handshake_sim(port=7001):
     PUBLIC_IP = get_public_ip()
 
@@ -714,8 +736,6 @@ def t3_handshake_sim(port=7001):
                         continue
 
                     decoded = data.decode(errors="ignore").strip()
-                    print(f"[DEBUG] Decoded incoming payload:\n{decoded}\n")  # Debugging aid
-
                     log_t3_event("t3 protocol - received_raw", ip, port, {
                         "hex_dump": data.hex(),
                         "ascii": decoded
@@ -724,21 +744,34 @@ def t3_handshake_sim(port=7001):
                     save_raw_t3(ip, data)
                     save_serialized_stream(ip, data)
 
-                    #  HTTP/HTTPS probe detection
+                    # HTTP probe detection and redirect
                     if any(decoded.upper().lstrip().startswith(m) for m in ["GET", "POST", "HEAD", "HTTP", "OPTIONS", "PUT", "CONNECT"]):
                         log_t3_event("t3 protocol - http_probe_detected", ip, port, {
                             "ascii": decoded
                         })
+
                         redirect_response = (
                             f"HTTP/1.1 302 Found\r\n"
                             f"Location: https://{PUBLIC_IP}:8443/\r\n"
                             f"Content-Length: 0\r\n"
                             f"Connection: close\r\n\r\n"
                         )
-                        client_socket.sendall(redirect_response.encode())
-                        client_socket.close()
-                        continue
 
+                        try:
+                            client_socket.sendall(redirect_response.encode())
+                            log_t3_event("t3 protocol - sent_redirect", ip, port, {
+                                "location": f"https://{PUBLIC_IP}:8443/"
+                            })
+                            time.sleep(random.uniform(0.5, 1.0))
+                            client_socket.shutdown(socket.SHUT_WR)
+                            client_socket.close()
+                            continue
+                        except Exception as e:
+                            log_t3_event("t3 protocol - send_redirect_failed", ip, port, {"error": str(e)})
+                            client_socket.close()
+                            continue
+
+                    # Serialized object detection
                     if b"\xac\xed\x00\x05" in data:
                         log_t3_event("t3 protocol - java_serialized_marker", ip, port)
 
@@ -750,26 +783,19 @@ def t3_handshake_sim(port=7001):
                         try:
                             client_socket.sendall(fake_error)
                             log_t3_event("t3 protocol - sent_deserialization_error", ip, port)
-
-                            # Sleep briefly to simulate WebLogic processing
                             time.sleep(random.uniform(1.0, 2.0))
-
-                            # Close connection to flush data and let test scripts pass
                             client_socket.shutdown(socket.SHUT_WR)
                             client_socket.close()
-
                             log_t3_event("t3 protocol - closed_after_fake_error", ip, port)
-                            continue  # skip further handling
-
+                            continue
                         except Exception as e:
                             log_t3_event("t3 protocol - send_error_failed", ip, port, {"error": str(e)})
                             client_socket.close()
                             continue
 
-                    # 🤝 Simulate a T3 handshake
+                    # T3 handshake
                     if decoded.startswith("t3"):
-                        weblogic_versions = ["12.2.1.4.0", "14.1.1.0", "12.1.3.0"]
-                        version = random.choice(weblogic_versions)
+                        version = random.choice(["12.2.1.4.0", "14.1.1.0", "12.1.3.0"])
                         asn = random.randint(1024, 32767)
                         hl = random.randint(10, 50)
                         ms = random.randint(500, 5000)
@@ -786,18 +812,20 @@ def t3_handshake_sim(port=7001):
                     else:
                         log_t3_event("t3 protocol - not_a_t3_handshake", ip, port)
 
-                    # 🔁 Try reading additional payload
-                    payload = client_socket.recv(4096)
-                    if payload:
-                        log_t3_event("t3 protocol - secondary_payload", ip, port, {
-                            "hex_dump": payload.hex(),
-                            "ascii": payload.decode(errors="ignore")
-                        })
-                        save_raw_t3(ip, payload)
-                        save_serialized_stream(ip, payload)
+                    # Optional: secondary payload
+                    try:
+                        payload = client_socket.recv(4096)
+                        if payload:
+                            log_t3_event("t3 protocol - secondary_payload", ip, port, {
+                                "hex_dump": payload.hex(),
+                                "ascii": payload.decode(errors="ignore")
+                            })
+                            save_raw_t3(ip, payload)
+                            save_serialized_stream(ip, payload)
+                    except socket.timeout:
+                        pass
 
-                    # ⏳ Hold connection open for realism
-                    time.sleep(random.randint(10, 30))
+                    time.sleep(random.randint(10, 30))  # Keep connection open for realism
 
                 except Exception as e:
                     log_t3_event("t3 protocol - error", ip, port, {"error": str(e)})
