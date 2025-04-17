@@ -24,26 +24,6 @@ from ecs_logger import system_logger, general_logger, exploit_logger, t3_logger,
 
 stop_threads = threading.Event()
 
-'''
-sudo setcap 'cap_net_bind_service=+ep' /usr/bin/python3
-
-[Unit]
-Description=WebLogic Honeypot Service
-After=network.target
-
-[Service]
-Type=simple
-User=yourusername
-WorkingDirectory=/path/to/your/script
-ExecStart=/usr/bin/python3 /path/to/your/script/app-v1.py
-Restart=on-failure
-
-# Allow binding to port 443
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-
-[Install]
-WantedBy=multi-user.target'''
-
 
 log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True)
@@ -692,7 +672,11 @@ def log_t3_event(event_type, ip, port, extra=None):
         log_entry.update(extra)
     log_event(t3_logger, 'info', json.dumps(log_entry), {"event.dataset": "t3_events", "log_file_path": t3_events_log_file})
 
-import random
+def get_public_ip():
+    try:
+        return requests.get("https://api.ipify.org").text.strip()
+    except Exception:
+        return "127.0.0.1"
 
 def save_raw_t3(ip, raw_data):
     os.makedirs("captures/t3", exist_ok=True)
@@ -711,6 +695,8 @@ def save_serialized_stream(ip, data):
             f.write(stream)
 
 def t3_handshake_sim(port=7001):
+    PUBLIC_IP = get_public_ip()
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind(("0.0.0.0", port))
@@ -727,39 +713,53 @@ def t3_handshake_sim(port=7001):
                     if not data:
                         continue
 
-                    # Always log and save first packet
+                    decoded = data.decode(errors="ignore", errors="ignore").strip()
+                    print(f"[DEBUG] Decoded incoming payload:\n{decoded}\n")  # Debugging aid
+
                     log_t3_event("t3 protocol - received_raw", ip, port, {
                         "hex_dump": data.hex(),
-                        "ascii": data.decode(errors='ignore')
+                        "ascii": decoded
                     })
-                    save_raw_t3(ip, data)
 
-                    # Save Java serialized stream if present
+                    save_raw_t3(ip, data)
                     save_serialized_stream(ip, data)
 
-                    decoded = data.decode(errors='ignore')
-
-                    # 🔁 HTTP/HTTPS redirect if detected
-                    if decoded.startswith(("GET", "POST", "HEAD", "HTTP", "OPTIONS", "PUT", "CONNECT")):
+                    #  HTTP/HTTPS probe detection
+                    if any(decoded.upper().lstrip().startswith(m) for m in ["GET", "POST", "HEAD", "HTTP", "OPTIONS", "PUT", "CONNECT"]):
                         log_t3_event("t3 protocol - http_probe_detected", ip, port, {
                             "ascii": decoded
                         })
                         redirect_response = (
                             f"HTTP/1.1 302 Found\r\n"
-                            f"Location: https://{ip}:8443/\r\n"
+                            f"Location: https://{PUBLIC_IP}:8443/\r\n"
                             f"Content-Length: 0\r\n"
                             f"Connection: close\r\n\r\n"
                         )
                         client_socket.sendall(redirect_response.encode())
+                        client_socket.close()
                         continue
 
-                    # Simulate fake deserialization error
+                    # 🔓 Fake Java deserialization failure
                     if b"\xac\xed\x00\x05" in data:
-                        log_t3_event("t3 protocol - java_serialized_marker", ip, port)
-                        fake_error = b"Exception: java.lang.ClassNotFoundException: ysoserial.payloads.CommonsCollections1\n"
-                        client_socket.sendall(fake_error)
+                            log_t3_event("t3 protocol - java_serialized_marker", ip, port)
 
-                    # T3 handshake logic
+                            fake_error = (
+                                b"Exception: java.lang.ClassNotFoundException: ysoserial.payloads.CommonsCollections1\n"
+                                b"at weblogic.rjvm.MsgAbbrevInputStream.readObject(MsgAbbrevInputStream.java:528)\n"
+                            )
+
+                            try:
+                                client_socket.sendall(fake_error)
+                                log_t3_event("t3 protocol - sent_deserialization_error", ip, port, {
+                                    "error": "fake exception sent"
+                                })
+                            except Exception as e:
+                                log_t3_event("t3 protocol - send_error_failed", ip, port, {
+                                    "error": str(e)
+                                })
+
+
+                    # 🤝 Simulate a T3 handshake
                     if decoded.startswith("t3"):
                         weblogic_versions = ["12.2.1.4.0", "14.1.1.0", "12.1.3.0"]
                         version = random.choice(weblogic_versions)
@@ -779,17 +779,17 @@ def t3_handshake_sim(port=7001):
                     else:
                         log_t3_event("t3 protocol - not_a_t3_handshake", ip, port)
 
-                    # Secondary payload read
+                    # 🔁 Try reading additional payload
                     payload = client_socket.recv(4096)
                     if payload:
                         log_t3_event("t3 protocol - secondary_payload", ip, port, {
                             "hex_dump": payload.hex(),
-                            "ascii": payload.decode(errors='ignore')
+                            "ascii": payload.decode(errors="ignore")
                         })
                         save_raw_t3(ip, payload)
                         save_serialized_stream(ip, payload)
 
-                    # Hold connection open to simulate long-running session
+                    # ⏳ Hold connection open for realism
                     time.sleep(random.randint(10, 30))
 
                 except Exception as e:
@@ -802,12 +802,13 @@ def t3_handshake_sim(port=7001):
             except socket.error:
                 break
 
-
     
 def main():
     """
     Main function to start the honeypot services.
     """
+    PUBLIC_IP = get_public_ip()
+
     try:
         # Start Flask apps on different ports
         for port, app in apps.items():
