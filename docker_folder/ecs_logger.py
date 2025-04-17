@@ -2,7 +2,6 @@ import logging
 import json
 import os
 from datetime import datetime
-from geoip_helper import get_geoip  # Assumes you use geoip2 or similar
 
 log_dir = "/app/logs"
 os.makedirs(log_dir, exist_ok=True)
@@ -13,6 +12,39 @@ logger.setLevel(logging.INFO)
 handler = logging.FileHandler(log_path)
 handler.setFormatter(logging.Formatter('%(message)s'))
 logger.addHandler(handler)
+
+def get_geoip(ip_address):
+    geo_info = {}
+    try:
+        with geoip2.database.Reader(GEOIP_DB_PATH) as reader:
+            response = reader.city(ip_address)
+            geo_info = {
+                "country": response.country.name,
+                "region": response.subdivisions.most_specific.name,
+                "city": response.city.name,
+                "latitude": response.location.latitude,
+                "longitude": response.location.longitude
+            }
+    except Exception:
+        geo_info = {"country": None, "region": None, "city": None, "latitude": None, "longitude": None}
+
+    isp, asn = "Unknown", "Unknown"
+    try:
+        response = requests.get(f"https://ipinfo.io/{ip_address}/json").json()
+        isp = response.get("org", "Unknown")
+    except Exception:
+        pass
+
+    try:
+        hostname = socket.gethostbyaddr(ip_address)[0]
+    except socket.herror:
+        hostname = "Unknown"
+    return {
+        "ip": ip_address,
+        "hostname": hostname,
+        "geo_info": geo_info,
+        "isp": isp,
+    }
 
 def log_event(event_type, category, data):
     geo = get_geoip(data.get("source_ip", "")) or {}
