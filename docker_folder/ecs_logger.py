@@ -28,9 +28,9 @@ def log_event(event_type, category, data):
         "source": {
             "ip": data.get("source_ip"),
             "geo": {
-                "city_name": data.get("city"),
-                "country_name": data.get("country"),
-                "region_name": data.get("region"),
+                "city_name": data.get("city_name"),
+                "country_name": data.get("country_name"),
+                "region_name": data.get("region_name"),
                 "location": {
                     "lat": data.get("latitude"),
                     "lon": data.get("longitude")
