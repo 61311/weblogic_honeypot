@@ -1,0 +1,548 @@
+# Main Pipeline for processing honeypot logs
+# This pipeline is responsible for routing logs to the appropriate sub-pipelines
+# based on the log file path. It also includes debugging information for tracking
+# the processing stages.
+
+[
+  {
+    "set": {
+      "field": "debug.dispatcher_stage",
+      "value": "entered"
+    }
+  },
+  {
+    "json": {
+      "field": "message",
+      "target_field": "event_data",
+      "ignore_failure": true
+    }
+  },
+  {
+    "remove": {
+      "field": "message",
+      "ignore_failure": true
+    }
+  },
+  {
+    "pipeline": {
+      "if": "ctx.log?.file?.path == '/app/logs/general_events.log'",
+      "name": "honeypot-general-pipeline",
+      "on_failure": [
+        {
+          "set": {
+            "field": "debug.pipeline_failure",
+            "value": "general pipeline failed"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "pipeline": {
+      "if": "ctx.log?.file?.path == '/app/logs/exploit_events.log'",
+      "name": "honeypot-exploit-pipeline",
+      "on_failure": [
+        {
+          "set": {
+            "field": "debug.pipeline_failure",
+            "value": "exploit pipeline failed"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "pipeline": {
+      "if": "ctx.log?.file?.path == '/app/logs/t3_events.log'",
+      "name": "honeypot-exploit-pipeline",
+      "on_failure": [
+        {
+          "set": {
+            "field": "debug.pipeline_failure",
+            "value": "exploit pipeline failed"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "set": {
+      "field": "debug.dispatcher_stage",
+      "value": "exit"
+    }
+  }
+]
+
+# Sub-pipeline for processing general events
+# This pipeline is responsible for parsing and renaming fields in the log data
+# It also sets the event kind, category, and type for the logs.
+# Debugging information is included to track the processing stages.
+# The pipeline is designed to handle JSON formatted logs and includes error handling
+# for missing fields.
+
+
+[
+  {
+    "set": {
+      "field": "debug.subpipeline",
+      "value": "general entered"
+    }
+  },
+  {
+    "json": {
+      "field": "message",
+      "target_field": "event_data",
+      "ignore_failure": false
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "json parsed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.message.source_ip",
+      "target_field": "source.ip",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "source.ip renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.message.username",
+      "target_field": "user.name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "username renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.message.password",
+      "target_field": "user.password",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "password renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.latitude",
+      "target_field": "source.geo.location.lat",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "latitude renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.longitude",
+      "target_field": "source.geo.location.lon",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "longitude renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.city",
+      "target_field": "source.geo.city_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "city renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.country",
+      "target_field": "source.geo.country_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "country renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.region",
+      "target_field": "source.geo.region_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "region renamed"
+    }
+  },
+  {
+    "set": {
+      "field": "event.kind",
+      "value": "event"
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "event.kind set"
+    }
+  },
+  {
+    "set": {
+      "field": "event.category",
+      "value": [
+        "credentials"
+      ]
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "event.category set"
+    }
+  },
+  {
+    "set": {
+      "field": "event.type",
+      "value": [
+        "access"
+      ]
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "event.type set"
+    }
+  },
+  {
+    "set": {
+      "field": "debug.subpipeline",
+      "value": "general exit"
+    }
+  }
+]
+
+# Sub-pipeline for processing exploit events
+
+[
+  {
+    "set": {
+      "field": "debug.subpipeline",
+      "value": "exploit entered"
+    }
+  },
+  {
+    "json": {
+      "field": "message",
+      "target_field": "event_data",
+      "ignore_failure": false
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "json parsed"
+    }
+  },
+  {
+    "set": {
+      "field": "debug.source_ip_present",
+      "value": "{{event_data.message.source_ip != null}}"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.message.source_ip",
+      "target_field": "source.ip",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "source.ip renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.latitude",
+      "target_field": "source.geo.location.lat",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "latitude renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.longitude",
+      "target_field": "source.geo.location.lon",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "longitude renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.city",
+      "target_field": "source.geo.city_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "city renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.country",
+      "target_field": "source.geo.country_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "country renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.region",
+      "target_field": "source.geo.region_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "region renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.details.headers.User-Agent",
+      "target_field": "user_agent.original",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "user_agent renamed"
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.details.path",
+      "target_field": "url.path",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "path renamed"
+    }
+  },
+  {
+    "set": {
+      "field": "event.kind",
+      "value": "event"
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "event.kind set"
+    }
+  },
+  {
+    "set": {
+      "field": "event.category",
+      "value": [
+        "intrusion_detection"
+      ]
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "event.category set"
+    }
+  },
+  {
+    "set": {
+      "field": "event.type",
+      "value": [
+        "alert"
+      ]
+    }
+  },
+  {
+    "set": {
+      "field": "debug.step",
+      "value": "event.type set"
+    }
+  },
+  {
+    "set": {
+      "field": "debug.subpipeline",
+      "value": "exploit exit"
+    }
+  }
+]
+
+# Sub-pipeline for processing T3 events
+
+[
+  {
+    "set": {
+      "field": "debug.subpipeline",
+      "value": "t3 entered"
+    }
+  },
+  {
+    "json": {
+      "field": "message",
+      "target_field": "event_data",
+      "ignore_failure": true
+    }
+  },
+  {
+    "date": {
+      "field": "event_data.timestamp",
+      "formats": [
+        "strict_date_optional_time"
+      ],
+      "target_field": "@timestamp",
+      "ignore_failure": false
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.source_ip",
+      "target_field": "source.ip",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.latitude",
+      "target_field": "source.geo.location.lat",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.longitude",
+      "target_field": "source.geo.location.lon",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.city",
+      "target_field": "source.geo.city_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.country",
+      "target_field": "source.geo.country_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "rename": {
+      "field": "event_data.geoip.geo_info.region",
+      "target_field": "source.geo.region_name",
+      "ignore_missing": true,
+      "ignore_failure": true
+    }
+  },
+  {
+    "set": {
+      "field": "event.kind",
+      "value": "event"
+    }
+  },
+  {
+    "set": {
+      "field": "event.category",
+      "value": [
+        "network"
+      ]
+    }
+  },
+  {
+    "set": {
+      "field": "event.type",
+      "value": [
+        "connection"
+      ]
+    }
+  }
+]
