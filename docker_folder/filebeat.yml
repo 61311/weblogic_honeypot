@@ -23,7 +23,10 @@ setup.template.pattern: "adv-intel-logs-*"
 
 output.elasticsearch:
   hosts: ["https://localhost:9200"]
-  index: "adv-intel-logs"
+  data_stream:
+    type: logs
+    dataset: adv_intel
+    namespace: default
   pipeline: "adv-intel-ecs-enrich"
   username: "elastic"
   password: "changeme"
