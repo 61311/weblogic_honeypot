@@ -9,17 +9,14 @@ filebeat.inputs:
     json.add_error_key: true
     ignore_older: 0s
 
-setup.ilm.enabled: true
-setup.template.enabled: true
+
+
+
 logging.level: debug
 logging.selectors: ["*"]
 # ILM must be enabled for data streams
 setup.ilm.enabled: true
 
-# Remove all template.name / pattern — Filebeat will use data stream templates
-setup.template.enabled: true
-setup.template.name: "adv-intel-logs-template"
-setup.template.pattern: "adv-intel-logs-*"
 
 output.elasticsearch:
   hosts: ["https://10.0.0.135:9200"]
