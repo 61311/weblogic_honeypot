@@ -482,15 +482,18 @@ def get_geoip(ip_address):
     }
 
 def log_gen_event(event_type, ip, details):
-    geo = get_geoip(ip)
+    geo_data = get_geoip(ip) or {}
+    geo_info = geo_data.get("geo_info", {})
 
     data = {
         "source_ip": ip,
-        "city_name": geo.get("city"),
-        "region_name": geo.get("region"),
-        "country_name": geo.get("country"),
-        "latitude": geo.get("latitude"),
-        "longitude": geo.get("longitude"),
+        "city_name": geo_info.get("city"),
+        "region_name": geo_info.get("region"),
+        "country_name": geo_info.get("country"),
+        "latitude": geo_info.get("latitude"),
+        "longitude": geo_info.get("longitude"),
+        "hostname": geo_data.get("hostname"),
+        "isp": geo_data.get("isp"),
         "extra": {
             "details": details
         }
@@ -504,15 +507,18 @@ def log_gen_event(event_type, ip, details):
 # Log General Connection to none exploitable paths 
 
 def log_mal_event(event_type, ip, details):
-    geo = get_geoip(ip)
+    geo_data = get_geoip(ip) or {}
+    geo_info = geo_data.get("geo_info", {})
 
     data = {
         "source_ip": ip,
-        "city_name": geo.get("city"),
-        "region_name": geo.get("region"),
-        "country_name": geo.get("country"),
-        "latitude": geo.get("latitude"),
-        "longitude": geo.get("longitude"),
+        "city_name": geo_info.get("city"),
+        "region_name": geo_info.get("region"),
+        "country_name": geo_info.get("country"),
+        "latitude": geo_info.get("latitude"),
+        "longitude": geo_info.get("longitude"),
+        "hostname": geo_data.get("hostname"),
+        "isp": geo_data.get("isp"),
         "extra": {
             "details": details
         }
@@ -601,19 +607,23 @@ for port, app in apps.items():
                 return jsonify({'status': 'error', 'message': 'Invalid request data'}), 400
 
             ip = request.remote_addr
-            geo = get_geoip(ip)
+            geo_data = get_geoip(ip) or {}
+            geo_info = geo_data.get("geo_info", {})
 
-            ecs_data = {
+            data = {
                 "source_ip": ip,
-                "username": data["username"],
-                "password": data["password"],
-                "city_name": geo.get("city"),
-                "region_name": geo.get("region"),
-                "country_name": geo.get("country"),
-                "latitude": geo.get("latitude"),
-                "longitude": geo.get("longitude"),
-                "extra": {"context": "credentials"}
+                "city_name": geo_info.get("city"),
+                "region_name": geo_info.get("region"),
+                "country_name": geo_info.get("country"),
+                "latitude": geo_info.get("latitude"),
+                "longitude": geo_info.get("longitude"),
+                "hostname": geo_data.get("hostname"),
+                "isp": geo_data.get("isp"),
+                "extra": {
+                    "details": details
+                }
             }
+
 
             log_event(
                 event_type="credentials_captured",
@@ -683,17 +693,18 @@ def run_flask_app(app, port, use_ssl=False):
 
 def log_t3_event(event_type, ip, port, extra=None):
     geo = get_geoip(ip) or {}
+    geo_info = geo.get("geo_info", {})
 
     data = {
         "source_ip": ip,
         "port": port,
         "user_agent": None,
         "url_path": None,
-        "city_name": geo.get("city"),
-        "region_name": geo.get("region"),
-        "country_name": geo.get("country"),
-        "latitude": geo.get("latitude"),
-        "longitude": geo.get("longitude"),
+        "city_name": geo_info.get("city"),
+        "region_name": geo_info.get("region"),
+        "country_name": geo_info.get("country"),
+        "latitude": geo_info.get("latitude"),
+        "longitude": geo_info.get("longitude"),
         "exploit": None,
         "headers": {},
         "payload": extra.get("payload") if extra else None,

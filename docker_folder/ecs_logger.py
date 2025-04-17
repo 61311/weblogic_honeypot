@@ -35,6 +35,11 @@ def log_event(event_type, category, data):
                     "lat": data.get("latitude"),
                     "lon": data.get("longitude")
                 }
+            },
+            "as" : {
+                "organization": {
+                    "name": data.get("isp")
+                }
             }
         },
         "user_agent": {
@@ -52,6 +57,9 @@ def log_event(event_type, category, data):
             "ascii": data.get("ascii"),
             "port": data.get("port"),
             "extra": data.get("extra", {})
+        },
+        "host": {
+            "name": data.get("hostname", "unknown")
         }
     }
 
