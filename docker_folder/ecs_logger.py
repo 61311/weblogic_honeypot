@@ -2,13 +2,7 @@ import logging
 import json
 import os
 from datetime import datetime
-import requests
-import geoip2.database
-import socket
 
-GEOIP_DB_PATH = "GeoLite2-City.mmdb"
-if not os.path.exists(GEOIP_DB_PATH):
-    raise FileNotFoundError(f"GeoIP database not found at {GEOIP_DB_PATH}. Please download it from MaxMind.")
 
 
 log_dir = "/app/logs"
@@ -21,41 +15,8 @@ handler = logging.FileHandler(log_path)
 handler.setFormatter(logging.Formatter('%(message)s'))
 logger.addHandler(handler)
 
-def get_geoip(ip_address):
-    geo_info = {}
-    try:
-        with geoip2.database.Reader(GEOIP_DB_PATH) as reader:
-            response = reader.city(ip_address)
-            geo_info = {
-                "country": response.country.name,
-                "region": response.subdivisions.most_specific.name,
-                "city": response.city.name,
-                "latitude": response.location.latitude,
-                "longitude": response.location.longitude
-            }
-    except Exception:
-        geo_info = {"country": None, "region": None, "city": None, "latitude": None, "longitude": None}
-
-    isp, asn = "Unknown", "Unknown"
-    try:
-        response = requests.get(f"https://ipinfo.io/{ip_address}/json").json()
-        isp = response.get("org", "Unknown")
-    except Exception:
-        pass
-
-    try:
-        hostname = socket.gethostbyaddr(ip_address)[0]
-    except socket.herror:
-        hostname = "Unknown"
-    return {
-        "ip": ip_address,
-        "hostname": hostname,
-        "geo_info": geo_info,
-        "isp": isp,
-    }
 
 def log_event(event_type, category, data):
-    geo = get_geoip(data.get("source_ip", "")) or {}
 
     ecs_event = {
         "@timestamp": datetime.utcnow().isoformat() + "Z",
@@ -67,12 +28,12 @@ def log_event(event_type, category, data):
         "source": {
             "ip": data.get("source_ip"),
             "geo": {
-                "city_name": geo.get("city"),
-                "country_name": geo.get("country"),
-                "region_name": geo.get("region"),
+                "city_name": data.get("city"),
+                "country_name": data.get("country"),
+                "region_name": data.get("region"),
                 "location": {
-                    "lat": geo.get("latitude"),
-                    "lon": geo.get("longitude")
+                    "lat": data.get("latitude"),
+                    "lon": data.get("longitude")
                 }
             }
         },
