@@ -18,28 +18,18 @@ from defusedxml.ElementTree import parse as secure_parse
 from defusedxml.ElementTree import ParseError
 import xmlschema
 import urllib.parse
-from ecs_logger import system_logger, general_logger, exploit_logger, t3_logger, log_event
+from ecs_logger import log_event
 
 
 
 stop_threads = threading.Event()
 
 
-log_dir = 'logs'
-os.makedirs(log_dir, exist_ok=True)
+
 os.makedirs("captures", exist_ok=True)
 os.makedirs("payloads", exist_ok=True)
 
-# Log file paths
-system_log_file = os.path.join(log_dir, 'system.log')
-general_events_log_file = os.path.join(log_dir, 'general_events.log')
-exploit_events_log_file = os.path.join(log_dir, 'exploit_events.log')
-t3_events_log_file = os.path.join(log_dir, 't3_events.log')
 
-# Function to log system events
-
-def log_system_event(message, level='info'):
-    pass
 
 
 # Constants
@@ -491,27 +481,48 @@ def get_geoip(ip_address):
         "isp": isp,
     }
 
-def log_mal_event(event_type, ip, details):
-    log_entry = {
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "event_type": event_type,
-        "source_ip": ip,
-        "geoip": get_geoip(ip),
-        "details": details
-    }
-    log_event(exploit_logger, 'info', json.dumps(log_entry), {"event.dataset": "exploit_events", "log_file_path": exploit_events_log_file})
+def log_gen_event(event_type, ip, details):
+    geo = get_geoip(ip)
 
+    data = {
+        "source_ip": ip,
+        "city_name": geo.get("city"),
+        "region_name": geo.get("region"),
+        "country_name": geo.get("country"),
+        "latitude": geo.get("latitude"),
+        "longitude": geo.get("longitude"),
+        "extra": {
+            "details": details
+        }
+    }
+
+    log_event(
+        event_type=event_type,
+        category="network",
+        data=data
+    )
 # Log General Connection to none exploitable paths 
 
-def log_gen_event(event_type, ip, details):
-    log_entry = {
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "event_type": event_type,
+def log_mal_event(event_type, ip, details):
+    geo = get_geoip(ip)
+
+    data = {
         "source_ip": ip,
-        "geoip": get_geoip(ip),
-        "details": details
+        "city_name": geo.get("city"),
+        "region_name": geo.get("region"),
+        "country_name": geo.get("country"),
+        "latitude": geo.get("latitude"),
+        "longitude": geo.get("longitude"),
+        "extra": {
+            "details": details
+        }
     }
-    log_event(general_logger, 'info', json.dumps(log_entry), {"event.dataset": "general_events", "log_file_path": general_events_log_file})
+
+    log_event(
+        event_type=event_type,
+        category="intrusion_detection",
+        data=data
+    )
 
 
 # Processing of Request/Response
@@ -589,22 +600,33 @@ for port, app in apps.items():
             if not data or 'username' not in data or 'password' not in data:
                 return jsonify({'status': 'error', 'message': 'Invalid request data'}), 400
 
-            username = data['username']
-            password = data['password']
             ip = request.remote_addr
-            event_details = f"Captured credentials - Username: {username}, Password: {password}"
-            log_entry = {
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "event_type": "credentials_captured",
+            geo = get_geoip(ip)
+
+            ecs_data = {
                 "source_ip": ip,
-                "geoip": get_geoip(ip),
-                "username": username,
-                "password": password
+                "username": data["username"],
+                "password": data["password"],
+                "city_name": geo.get("city"),
+                "region_name": geo.get("region"),
+                "country_name": geo.get("country"),
+                "latitude": geo.get("latitude"),
+                "longitude": geo.get("longitude"),
+                "extra": {"context": "credentials"}
             }
-            log_event(general_logger, 'info', json.dumps(log_entry), {"event.dataset": "general_events", "log_file_path": general_events_log_file})
-            return jsonify({'status': 'success', 'message': 'Credentials logged'}), 200
+
+            log_event(
+                event_type="credentials_captured",
+                category="intrusion_detection",
+                data=ecs_data
+            )
+
+            return jsonify({'status': 'success'}), 200
+
         except Exception as e:
-            return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
+            from honeypot_syslog import log_error
+            log_error(f"Failed to log credentials: {e}", context="log_credentials")
+            return jsonify({'status': 'error', 'message': 'Internal error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
         return "Login failed. Invalid credentials.", 403
@@ -633,7 +655,6 @@ for port, app in apps.items():
 
         # Define the content of the text file
         response_content = """# This is a simulated response for a.txt
-    # Honeypot interaction detected
     # Timestamp: {}
     # IP Address: {}
     # User-Agent: {}
@@ -661,16 +682,31 @@ def run_flask_app(app, port, use_ssl=False):
         app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 def log_t3_event(event_type, ip, port, extra=None):
-    log_entry = {
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "event_type": event_type,
+    geo = get_geoip(ip) or {}
+
+    data = {
         "source_ip": ip,
-        "geoip": get_geoip(ip),
-        "port": port
+        "port": port,
+        "user_agent": None,
+        "url_path": None,
+        "city_name": geo.get("city"),
+        "region_name": geo.get("region"),
+        "country_name": geo.get("country"),
+        "latitude": geo.get("latitude"),
+        "longitude": geo.get("longitude"),
+        "exploit": None,
+        "headers": {},
+        "payload": extra.get("payload") if extra else None,
+        "ascii": extra.get("ascii") if extra else None,
+        "hex": extra.get("hex_dump") if extra else None,
+        "extra": extra or {}
     }
-    if extra:
-        log_entry.update(extra)
-    log_event(t3_logger, 'info', json.dumps(log_entry), {"event.dataset": "t3_events", "log_file_path": t3_events_log_file})
+
+    log_event(
+        event_type=event_type,
+        category="network",
+        data=data
+    )
 
 def get_public_ip():
     try:
@@ -728,6 +764,7 @@ def t3_handshake_sim(port=7001):
             try:
                 client_socket, addr = server_socket.accept()
                 ip = addr[0]
+                
                 log_t3_event("t3 protocol - connection", ip, port)
 
                 try:
@@ -759,9 +796,7 @@ def t3_handshake_sim(port=7001):
 
                         try:
                             client_socket.sendall(redirect_response.encode())
-                            log_t3_event("t3 protocol - sent_redirect", ip, port, {
-                                "location": f"https://{PUBLIC_IP}:8443/"
-                            })
+                            log_t3_event("t3 protocol - sent_redirect", ip, port)
                             time.sleep(0.5)
                             client_socket.shutdown(socket.SHUT_WR)
                             client_socket.close()

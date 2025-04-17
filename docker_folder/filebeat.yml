@@ -1,16 +1,16 @@
 filebeat.inputs:
   - type: filestream
-    id: honeypot-logs
+    id: adv-int-ecs-logs
     enabled: true
     paths:
       - /app/logs/*.log
-    json.keys_under_root: false
+    json.keys_under_root: true
+    json.overwrite_keys: true
     json.add_error_key: true
-    multiline:
-      pattern: '^\{'  # Match lines starting with '{' (JSON logs)
-      negate: true
-      match: after
+    ignore_older: 0s
 
+setup.ilm.enabled: true
+setup.template.enabled: true
 logging.level: debug
 logging.selectors: ["*"]
 # ILM must be enabled for data streams
@@ -18,16 +18,13 @@ setup.ilm.enabled: true
 
 # Remove all template.name / pattern — Filebeat will use data stream templates
 setup.template.enabled: true
-setup.template.priority: 200
-setup.template.name: "honeypot-logs-template"
-setup.template.pattern: "honeypot-logs-*"
+setup.template.name: "adv-intel-logs-template"
+setup.template.pattern: "adv-intel-logs-*"
 
 output.elasticsearch:
-  hosts: ["https://10.0.0.135:9200"]
+  hosts: ["https://localhost:9200"]
+  index: "adv-intel-logs"
+  pipeline: "adv-intel-ecs-enrich"
   username: "elastic"
-  password: "<your-password>"
+  password: "changeme"
   ssl.verification_mode: none
-  pipeline: "honeypot-pipeline"
-  indices:
-    - index: "honeypot-logs"  
-      pipeline: "honeypot-pipeline"
