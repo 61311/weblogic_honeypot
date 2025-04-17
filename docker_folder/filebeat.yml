@@ -16,7 +16,8 @@ logging.level: debug
 logging.selectors: ["*"]
 # ILM must be enabled for data streams
 setup.ilm.enabled: true
-
+setup.template.name: "adv-intel-logs-template"
+setup.template.pattern: "logs-adv_intel-*"
 
 output.elasticsearch:
   hosts: ["https://10.0.0.135:9200"]
@@ -24,7 +25,8 @@ output.elasticsearch:
     type: logs
     dataset: adv_intel
     namespace: default
+  index: "logs-adv_intel-%{+yyyy.MM.dd}"
   pipeline: "adv-intel-ecs-enrich"
   username: "elastic"
   password: "changeme"
-  ssl.verification_mode: none
+  ssl.verification_mode: none 
