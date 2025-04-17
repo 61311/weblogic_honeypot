@@ -4,11 +4,11 @@ filebeat.inputs:
     enabled: true
     paths:
       - /app/logs/*.log
-    json.keys_under_root: true
-    json.overwrite_keys: true
+    # Do NOT parse JSON in Filebeat
+    # Leave the logs as raw strings in `message`
+    json.keys_under_root: false
     json.add_error_key: true
     ignore_older: 0s
-
 
 
 
