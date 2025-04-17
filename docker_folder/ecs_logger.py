@@ -2,6 +2,14 @@ import logging
 import json
 import os
 from datetime import datetime
+import requests
+import geoip2.database
+import socket
+
+GEOIP_DB_PATH = "GeoLite2-City.mmdb"
+if not os.path.exists(GEOIP_DB_PATH):
+    raise FileNotFoundError(f"GeoIP database not found at {GEOIP_DB_PATH}. Please download it from MaxMind.")
+
 
 log_dir = "/app/logs"
 os.makedirs(log_dir, exist_ok=True)
