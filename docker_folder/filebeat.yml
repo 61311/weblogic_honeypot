@@ -22,7 +22,7 @@ setup.template.name: "adv-intel-logs-template"
 setup.template.pattern: "adv-intel-logs-*"
 
 output.elasticsearch:
-  hosts: ["https://localhost:9200"]
+  hosts: ["https://10.0.0.135:9200"]
   data_stream:
     type: logs
     dataset: adv_intel
