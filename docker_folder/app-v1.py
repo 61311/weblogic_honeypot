@@ -744,7 +744,7 @@ def t3_handshake_sim(port=7001):
                     save_raw_t3(ip, data)
                     save_serialized_stream(ip, data)
 
-                    # HTTP probe detection and redirect
+                    # HTTP redirect case
                     if any(decoded.upper().lstrip().startswith(m) for m in ["GET", "POST", "HEAD", "HTTP", "OPTIONS", "PUT", "CONNECT"]):
                         log_t3_event("t3 protocol - http_probe_detected", ip, port, {
                             "ascii": decoded
@@ -762,16 +762,17 @@ def t3_handshake_sim(port=7001):
                             log_t3_event("t3 protocol - sent_redirect", ip, port, {
                                 "location": f"https://{PUBLIC_IP}:8443/"
                             })
-                            time.sleep(random.uniform(0.5, 1.0))
+                            time.sleep(0.5)
                             client_socket.shutdown(socket.SHUT_WR)
                             client_socket.close()
+                            log_t3_event("t3 protocol - closed_after_redirect", ip, port)
                             continue
                         except Exception as e:
                             log_t3_event("t3 protocol - send_redirect_failed", ip, port, {"error": str(e)})
                             client_socket.close()
                             continue
 
-                    # Serialized object detection
+                    # Java serialization detection
                     if b"\xac\xed\x00\x05" in data:
                         log_t3_event("t3 protocol - java_serialized_marker", ip, port)
 
@@ -783,7 +784,7 @@ def t3_handshake_sim(port=7001):
                         try:
                             client_socket.sendall(fake_error)
                             log_t3_event("t3 protocol - sent_deserialization_error", ip, port)
-                            time.sleep(random.uniform(1.0, 2.0))
+                            time.sleep(0.5)
                             client_socket.shutdown(socket.SHUT_WR)
                             client_socket.close()
                             log_t3_event("t3 protocol - closed_after_fake_error", ip, port)
@@ -793,7 +794,7 @@ def t3_handshake_sim(port=7001):
                             client_socket.close()
                             continue
 
-                    # T3 handshake
+                    # T3 handshake simulation
                     if decoded.startswith("t3"):
                         version = random.choice(["12.2.1.4.0", "14.1.1.0", "12.1.3.0"])
                         asn = random.randint(1024, 32767)
@@ -809,10 +810,11 @@ def t3_handshake_sim(port=7001):
                             "hl": hl,
                             "ms": ms
                         })
+
                     else:
                         log_t3_event("t3 protocol - not_a_t3_handshake", ip, port)
 
-                    # Optional: secondary payload
+                    # Optional secondary payload
                     try:
                         payload = client_socket.recv(4096)
                         if payload:
@@ -825,17 +827,18 @@ def t3_handshake_sim(port=7001):
                     except socket.timeout:
                         pass
 
-                    time.sleep(random.randint(10, 30))  # Keep connection open for realism
+                    # Hold session if not closed early
+                    time.sleep(random.randint(10, 30))
 
                 except Exception as e:
                     log_t3_event("t3 protocol - error", ip, port, {"error": str(e)})
-
                 finally:
                     client_socket.close()
                     log_t3_event("t3 protocol - disconnection", ip, port)
 
             except socket.error:
                 break
+
 
     
 def main():
