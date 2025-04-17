@@ -713,7 +713,7 @@ def t3_handshake_sim(port=7001):
                     if not data:
                         continue
 
-                    decoded = data.decode(errors="ignore", errors="ignore").strip()
+                    decoded = data.decode(errors="ignore").strip()
                     print(f"[DEBUG] Decoded incoming payload:\n{decoded}\n")  # Debugging aid
 
                     log_t3_event("t3 protocol - received_raw", ip, port, {
