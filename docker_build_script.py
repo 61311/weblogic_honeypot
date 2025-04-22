@@ -71,6 +71,8 @@ def main():
     -p 8443:8443 \
     -p 14101:14101 \
     -p 7001:7001 \
+    --dns=8.8.8.8 \
+    --dns=8.8.4.4 \
     --name {CONTAINER_BASE_NAME} \
     {new_image_tag}
     """
