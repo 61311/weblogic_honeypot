@@ -1,0 +1,27 @@
+PUT _ingest/pipeline/adv-intel-ecs-enrich
+{
+  "description": "Minimal ECS enrichment for honeypot ECS-native JSON logs",
+  "processors": [
+    {
+      "date": {
+        "field": "@timestamp",
+        "formats": ["ISO8601"],
+        "ignore_failure": true
+      }
+    },
+    {
+      "set": {
+        "field": "event.kind",
+        "value": "event",
+        "ignore_empty_value": true
+      }
+    },
+    {
+      "rename": {
+        "field": "log.level",
+        "target_field": "log.level",
+        "ignore_missing": true
+      }
+    }
+  ]
+}
