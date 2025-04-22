@@ -238,6 +238,15 @@ exploit_dict = [
         "headers": {},
         "description": "Remote code execution vulnerability in WebLogic Server due to unsafe deserialization."
     },
+        {
+        "exploit": "CVE-2021–35587 ",
+        "exploit_path": "/oam/server/opensso/sessionservice",
+        "method": "['POST']",
+        "response": "Access denied",
+        "response_status": 403,
+        "headers": {},
+        "description": "Remote code execution vulnerability in OAM Service."
+    },
     {
         "exploit": "Exploit Attempt",
         "exploit_path": "/console/css/login.css",
