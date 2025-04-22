@@ -188,8 +188,8 @@ exploit_dict = [
         "exploit": "CVE-2018-2894",
         "exploit_path": "/uddiexplorer/",
         "method": "['GET']",
-        "response": "Access denied",
-        "response_status": 403,
+        "response": "WebLogic UDDI Explorer",
+        "response_status": 200,
         "headers": {},
         "description": "Directory traversal vulnerability in WebLogic UDDI Explorer."
     },
@@ -237,15 +237,6 @@ exploit_dict = [
         "response_status": 403,
         "headers": {},
         "description": "Remote code execution vulnerability in WebLogic Server due to unsafe deserialization."
-    },
-        {
-        "exploit": "CVE-2021–35587 ",
-        "exploit_path": "/oam/server/opensso/sessionservice",
-        "method": "['POST']",
-        "response": "Access denied",
-        "response_status": 403,
-        "headers": {},
-        "description": "Remote code execution vulnerability in OAM Service."
     },
     {
         "exploit": "Exploit Attempt",
@@ -344,7 +335,27 @@ exploit_dict = [
         "response_status": 200,
         "headers": {},
         "description": "Emulated Compromised Host with Attacker File."
-    }]
+    },
+    {
+        "exploit": "CVE-2021-35587",
+        "exploit_path": "/oam/server/opensso/sessionservice",
+        "method": "['POST']",
+        "response": (
+            "<html>\n"
+            "<head><title>oracle access manager</title></head>\n"
+            "<body>\n"
+            "<link rel=\"stylesheet\" type=\"text/css\" href=\"/oam/pages/css/login_page.css\">\n"
+            "</body>\n"
+            "</html>"
+        ),
+        "response_status": 200,
+        "headers": {
+            "Set-Cookie": "x-oracle-dms-ecid=12345; Path=/; HttpOnly",
+            "Set-Cookie": "x-oracle-dms-rid=67890; Path=/; HttpOnly"
+        },
+        "description": "Authentication bypass vulnerability in Oracle Access Manager."
+    }
+]
 
 
 # Random delay to evade fingerprinting  
@@ -680,6 +691,28 @@ for port, app in apps.items():
     """.format(datetime.datetime.now(datetime.timezone.utc).isoformat(), ip, user_agent)
     # Return the response
         return Response(response_content, status=200, mimetype='text/plain')
+    @app.route('/console/j_security_check', methods=['POST'])
+    def weblogic_weak_login():
+        username = request.form.get('j_username', '')
+        password = request.form.get('j_password', '')
+        ip = request.remote_addr
+
+        # Log the login attempt
+        log_mal_event("weblogic_weak_login_attempt", ip, {
+            "username": username,
+            "password": password,
+            "headers": dict(request.headers),
+            "user_agent": request.headers.get("User-Agent", "Unknown")
+        })
+
+        # Simulate a weak login response
+        if username == "weblogic" and password == "weblogic":
+            response = Response("<html><body>Login successful</body></html>", status=200)
+        else:
+            response = Response("<html><body>Login failed</body></html>", status=403)
+
+        weblogic_headers(response)
+        return response
     @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
     @app.route("/<path:path>", methods=["GET", "POST"])
     def catch_all(path):
