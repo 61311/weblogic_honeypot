@@ -50,10 +50,10 @@ def backup_container_data(container_name, backup_dir):
         payloads_backup_path = os.path.join(backup_dir, "payloads")
 
         print(f"Backing up captures/ folder from container {container_name}...")
-        subprocess.run(["docker", "cp", f"{container_name}:/captures", captures_backup_path], check=True)
+        subprocess.run(["docker", "cp", f"{container_name}:/app/captures", captures_backup_path], check=True)
 
         print(f"Backing up payloads/ folder from container {container_name}...")
-        subprocess.run(["docker", "cp", f"{container_name}:/payloads", payloads_backup_path], check=True)
+        subprocess.run(["docker", "cp", f"{container_name}:/app/payloads", payloads_backup_path], check=True)
 
         print(f"Backup completed. Data saved to {backup_dir}")
     except subprocess.CalledProcessError as e:
