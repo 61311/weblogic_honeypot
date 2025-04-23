@@ -570,6 +570,8 @@ def process_input(path: str, request: Request) -> Response:
             "headers": headers,
             "user_agent": user_agent
         })
+
+        print(f"[DEBUG] Exploit detected: {exploit['exploit']} from IP: {ip}")
         
         save_payload(ip, payload_data)
         
