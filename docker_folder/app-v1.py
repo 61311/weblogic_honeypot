@@ -554,15 +554,15 @@ def log_mal_event(event_type, ip, details):
 # Processing of Request/Response
 def process_input(path: str, request: Request) -> Response:
     """Process an incoming request and check for potential exploits."""
-    
-    def handle_exploit(exploit: dict) -> None:
+
+    def handle_exploit(exploit: dict) -> Response:
         """Handle a detected exploit."""
         ip = request.remote_addr
         request_data = request.data.decode(errors='ignore')
         user_agent = request.headers.get("User-Agent", "Unknown")
         headers = dict(request.headers)
         payload_data = extract_payload(request)
-        
+
         log_mal_event(exploit["exploit"], ip, {
             "path": request.path,
             "payload": request_data,
@@ -572,37 +572,40 @@ def process_input(path: str, request: Request) -> Response:
         })
 
         print(f"[DEBUG] Exploit detected: {exploit['exploit']} from IP: {ip}")
-        
+
         save_payload(ip, payload_data)
-        
+
         response_body = exploit["response"]
         response_status = int(exploit.get("response_status", 200))
         response = Response(response_body, status=response_status)
         weblogic_headers(response)
         random_delay()
         return response
-    
-    for exploit in exploit_dict:        
+
+    for exploit in exploit_dict:
         if request.path == exploit["exploit_path"]:
             return handle_exploit(exploit)
-    
 
     # If no exploit is matched, log a general event and serve the index.html file
-    ip = request.remote_addr
-    user_agent = request.headers.get("User-Agent", "Unknown")
-    headers = dict(request.headers)
-    payload_data = extract_payload(request)
-    log_gen_event("General Event Record", ip, {
-        "path": request.path,
-        "payload": payload_data,
-        "headers": headers,
-        "user_agent": user_agent
-    })
-    save_payload(ip, payload_data)
-    directory_path = 'source/oam/pages'
-    if not os.path.exists(directory_path):
-        return Response("Internal Server Error: Directory not found", status=500)
-    return send_from_directory(directory_path, 'login.html')
+    try:
+        ip = request.remote_addr
+        user_agent = request.headers.get("User-Agent", "Unknown")
+        headers = dict(request.headers)
+        payload_data = extract_payload(request)
+        log_gen_event("General Event Record", ip, {
+            "path": request.path,
+            "payload": payload_data,
+            "headers": headers,
+            "user_agent": user_agent
+        })
+        save_payload(ip, payload_data)
+        directory_path = 'source/oam/pages'
+        if not os.path.exists(directory_path):
+            return Response("Internal Server Error: Directory not found", status=500)
+        return send_from_directory(directory_path, 'login.html')
+    except Exception as e:
+        print(f"[ERROR] Exception in process_input: {e}")
+        return Response("Internal Server Error", status=500)
 
 # Routes
 def serve_index():
