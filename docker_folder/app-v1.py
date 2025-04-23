@@ -763,6 +763,7 @@ def log_t3_event(event_type, ip, port, extra=None):
         "country_name": geo_info.get("country"),
         "latitude": geo_info.get("latitude"),
         "longitude": geo_info.get("longitude"),
+        "isp": geo_info.get("isp"),
         "exploit": None,
         "headers": {},
         "payload": extra.get("payload") if extra else None,
