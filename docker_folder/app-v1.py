@@ -635,8 +635,15 @@ for port, app in apps.items():
             ip = request.remote_addr
             geo_data = get_geoip(ip) or {}
             geo_info = geo_data.get("geo_info", {})
-
-            data = {
+            username = data['username']
+            password = data['password']
+            details = {
+                "username": username,
+                "password": password,
+                "headers": dict(request.headers),
+                "user_agent": request.headers.get("User-Agent", "Unknown")
+            }
+            ecs_data = {
                 "source_ip": ip,
                 "city_name": geo_info.get("city"),
                 "region_name": geo_info.get("region"),
@@ -660,8 +667,6 @@ for port, app in apps.items():
             return jsonify({'status': 'success'}), 200
 
         except Exception as e:
-            from honeypot_syslog import log_error
-            log_error(f"Failed to log credentials: {e}", context="log_credentials")
             return jsonify({'status': 'error', 'message': 'Internal error'}), 500
     @app.route('/honeypot/auth', methods=['POST'])
     def honeypot_auth():
