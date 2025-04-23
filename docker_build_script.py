@@ -112,8 +112,16 @@ def main():
         if not args.skip_test:
             print("Testing Honeypot is Running Successfully...")
             try:
-                os.chdir(OPERATING_FOLDER)
-                subprocess.run(["python3", "test_app_v1.py"], check=True)
+                original_cwd = os.getcwd()
+                test_script_path = os.path.join(OPERATING_FOLDER, "test_app_v1.py")
+                if os.path.exists(test_script_path):
+                    subprocess.run(["python3", test_script_path], check=True)
+                else:
+                    print(f"Test script not found at {test_script_path}. Skipping test.")
+                try:
+                    subprocess.run(["python3", "test_app_v1.py"], check=True)
+                finally:
+                    os.chdir(original_cwd)
                 print("Test completed successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"Error during test execution: {e.stderr}")
