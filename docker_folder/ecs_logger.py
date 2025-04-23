@@ -49,7 +49,7 @@ def log_event(event_type, category, data):
             "path": data.get("url_path")
         },
         "event_data": {
-            "event_type": event_type,
+            "event_subtype": event_type,  # Renamed from 'event_type'
             "exploit": data.get("exploit"),
             "headers": data.get("headers", {}),
             "payload": data.get("payload"),

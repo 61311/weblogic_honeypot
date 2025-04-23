@@ -4,13 +4,9 @@ filebeat.inputs:
     enabled: true
     paths:
       - /app/logs/*.log
-    # Do NOT parse JSON in Filebeat
-    # Leave the logs as raw strings in `message`
-    json.keys_under_root: false
+    json.keys_under_root: false  # Reverted to false
     json.add_error_key: true
     ignore_older: 0s
-
-
 
 logging.level: debug
 logging.selectors: ["*"]
@@ -29,4 +25,4 @@ output.elasticsearch:
   pipeline: "adv-intel-ecs-enrich"
   username: "elastic"
   password: "changeme"
-  ssl.verification_mode: none 
+  ssl.verification_mode: none
