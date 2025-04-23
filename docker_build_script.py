@@ -9,6 +9,7 @@ import time
 # --- Configuration ---
 GIT_REPO_PATH = "/home/opc/honeypot/docker_folder"
 DOCKER_BUILD_DIR = "/home/opc/honeypot/docker_folder"
+OPERATING_FOLDER = "/home/opc/honeypot/"
 TARGET_FILE = "app-v1.py"
 CONTAINER_BASE_NAME = "weblogic_honeypot"
 
@@ -111,6 +112,7 @@ def main():
         if not args.skip_test:
             print("Testing Honeypot is Running Successfully...")
             try:
+                os.chdir(OPERATING_FOLDER)
                 subprocess.run(["python3", "test_app_v1.py"], check=True)
                 print("Test completed successfully.")
             except subprocess.CalledProcessError as e:
