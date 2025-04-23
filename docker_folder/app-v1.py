@@ -619,6 +619,12 @@ apps = {
 
 # Unified route for all apps
 for port, app in apps.items():
+    @app.after_request
+    def apply_weblogic_headers(response):
+        """Ensure WebLogic headers are applied to all HTTP responses."""
+        weblogic_headers(response)
+        return response
+
     @app.route('/log', methods=['POST'])
     def log_credentials():
         try:
