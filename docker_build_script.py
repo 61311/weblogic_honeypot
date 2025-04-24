@@ -14,6 +14,7 @@ DOCKER_BUILD_DIR = "/home/opc/honeypot/docker_folder"
 OPERATING_FOLDER = "/home/opc/honeypot/"
 TARGET_FILE = "app-v1.py"
 CONTAINER_BASE_NAME = "weblogic_honeypot"
+MARIMO_BUILD_DIR = "/home/opc/notebook"
 
 def file_hash(filepath):
     """Return SHA256 hash of file contents."""
@@ -83,7 +84,7 @@ def build_and_run_marimo_container():
     # Build the Marimo container
     print("Building the Marimo container...")
     subprocess.run([
-        "docker", "build", "-t", MARIMO_IMAGE_NAME, "./notebook"
+        "docker", "build", "-t", MARIMO_IMAGE_NAME, MARIMO_BUILD_DIR
     ], check=True)
 
     # Stop and remove any existing Marimo container

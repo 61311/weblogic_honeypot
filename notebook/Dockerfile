@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
+# Copy the current directory contents into the container
+COPY . /app
+
 # Install Marimo and required Python packages
 RUN pip install --no-cache-dir marimo requests pandas plotly
 
