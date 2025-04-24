@@ -1,10 +1,5 @@
-# Use a lightweight Python base image
-FROM python:3.10-slim-bullseye
-
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Use the Marimo base image with SQL support
+FROM ghcr.io/marimo-team/marimo:latest-sql
 
 # Set working directory
 WORKDIR /app
@@ -12,11 +7,11 @@ WORKDIR /app
 # Copy the current directory contents into the container
 COPY . /app
 
-# Install Marimo and required Python packages
-RUN pip install --no-cache-dir marimo requests pandas plotly
+# Install additional Python packages for querying and visualization
+RUN pip install --no-cache-dir requests pandas plotly
 
 # Expose default Marimo port
 EXPOSE 8888
 
 # Start Marimo
-CMD ["marimo", "--ip", "0.0.0.0", "--port", "8888"]
+CMD ["marimo", "edit", "--no-token", "-p", "8888", "--host", "0.0.0.0"]
