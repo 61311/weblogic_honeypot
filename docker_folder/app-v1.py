@@ -622,6 +622,12 @@ apps = {
     14101: Flask("weblogic_14101")
 }
 
+# Load API key from environment variable (default to a placeholder if not set)
+API_KEY = os.getenv("API_KEY", "your_secret_api_key")
+
+# Load IP allowlist from environment variable (comma-separated values)
+IP_ALLOWLIST = os.getenv("IP_ALLOWLIST", "").split(",")
+
 # Unified route for all apps
 for port, app in apps.items():
     @app.after_request
@@ -729,6 +735,45 @@ for port, app in apps.items():
 
         weblogic_headers(response)
         return response
+    @app.route('/api/logs', methods=['GET'])
+    def get_logs():
+        """API endpoint to fetch logs with optional filters."""
+        # Check for API key in headers
+        api_key = request.headers.get('X-API-Key')
+        if api_key != API_KEY:
+            return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+        # Check if the client's IP is in the allowlist
+        client_ip = request.remote_addr
+        if client_ip not in IP_ALLOWLIST:
+            return jsonify({"status": "error", "message": "IP not allowed"}), 401
+
+        event_type = request.args.get('event_type')
+        start_time = request.args.get('start_time')
+        end_time = request.args.get('end_time')
+
+        logs = []
+        log_file_path = "/app/logs/honeypot_events.log"
+
+        try:
+            with open(log_file_path, 'r') as log_file:
+                for line in log_file:
+                    log_entry = json.loads(line)
+
+                    # Apply filters
+                    if event_type and log_entry.get('event_data', {}).get('event_subtype') != event_type:
+                        continue
+                    if start_time and log_entry['@timestamp'] < start_time:
+                        continue
+                    if end_time and log_entry['@timestamp'] > end_time:
+                        continue
+
+                    logs.append(log_entry)
+
+            return jsonify({"status": "success", "logs": logs}), 200
+
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
     @app.route("/", defaults={'path': ''}, methods=["GET", "POST"])
     @app.route("/<path:path>", methods=["GET", "POST"])
     def catch_all(path):

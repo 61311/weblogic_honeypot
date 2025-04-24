@@ -5,6 +5,8 @@ from datetime import datetime
 import hashlib
 import argparse
 import time
+import secrets
+import ipaddress
 
 # --- Configuration ---
 GIT_REPO_PATH = "/home/opc/honeypot/docker_folder"
@@ -60,6 +62,18 @@ def backup_container_data(container_name, backup_dir):
     except subprocess.CalledProcessError as e:
         print(f"Error during backup: {e}")
 
+def generate_api_key():
+    """Generate a secure API key."""
+    return secrets.token_urlsafe(32)
+
+def is_valid_subnet(subnet):
+    """Validate if a given string is a valid subnet."""
+    try:
+        ipaddress.ip_network(subnet, strict=False)
+        return True
+    except ValueError:
+        return False
+
 def main():
     parser = argparse.ArgumentParser(description="Docker build script for WebLogic honeypot.")
     # Set default backup directory to a folder with the current date in the local directory
@@ -76,6 +90,15 @@ def main():
 
     # Backup container data before stopping it
     backup_container_data(CONTAINER_BASE_NAME, args.backup_dir)
+
+    # Generate a secure API key
+    api_key = generate_api_key()
+    print(f"Generated API Key: {api_key}")
+
+    # Define the IP allowlist (subnet-based)
+    ip_allowlist = "10.0.0.0/8"
+    if not is_valid_subnet(ip_allowlist):
+        raise ValueError(f"Invalid subnet: {ip_allowlist}")
 
     # Create a new Docker image with build date/time in the name
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -98,6 +121,8 @@ def main():
     -p 7001:7001 \
     --dns=8.8.8.8 \
     --dns=8.8.4.4 \
+    -e API_KEY={api_key} \
+    -e IP_ALLOWLIST={ip_allowlist} \
     --name {CONTAINER_BASE_NAME} \
     {new_image_tag}
     """
