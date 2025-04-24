@@ -130,7 +130,7 @@ def main():
     print(f"Generated API Key: {api_key}")
 
     # Define the IP allowlist (subnet-based)
-    ip_allowlist = "10.0.0.0/8"
+    ip_allowlist = "172.17.0.0/8"
     if not is_valid_subnet(ip_allowlist):
         raise ValueError(f"Invalid subnet: {ip_allowlist}")
 
