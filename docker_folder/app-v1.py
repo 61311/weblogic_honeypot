@@ -744,9 +744,9 @@ for port, app in apps.items():
             return jsonify({"status": "error", "message": "Unauthorized"}), 401
 
         # Check if the client's IP is in the allowlist
-        client_ip = request.remote_addr
-        if client_ip not in IP_ALLOWLIST:
-            return jsonify({"status": "error", "message": "IP not allowed"}), 401
+        # client_ip = request.remote_addr
+        # if client_ip not in IP_ALLOWLIST:
+        #     return jsonify({"status": "error", "message": "IP not allowed"}), 401
 
         event_type = request.args.get('event_type')
         start_time = request.args.get('start_time')
