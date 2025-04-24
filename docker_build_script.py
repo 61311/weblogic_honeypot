@@ -74,6 +74,39 @@ def is_valid_subnet(subnet):
     except ValueError:
         return False
 
+def build_and_run_marimo_container():
+    """Build and run the Marimo container for querying the honeypot API."""
+    MARIMO_CONTAINER_NAME = "marimo_instance"
+    MARIMO_IMAGE_NAME = "marimo_image"
+    MARIMO_PORT = 8888
+
+    # Build the Marimo container
+    print("Building the Marimo container...")
+    subprocess.run([
+        "docker", "build", "-t", MARIMO_IMAGE_NAME, "./notebook"
+    ], check=True)
+
+    # Stop and remove any existing Marimo container
+    try:
+        subprocess.run([
+            "docker", "rm", "-f", MARIMO_CONTAINER_NAME
+        ], check=True)
+    except subprocess.CalledProcessError:
+        print("No existing Marimo container to remove.")
+
+    # Run the Marimo container
+    print("Starting the Marimo container...")
+    subprocess.run([
+        "docker", "run", "-d",
+        "--name", MARIMO_CONTAINER_NAME,
+        "-p", f"{MARIMO_PORT}:{MARIMO_PORT}",
+        MARIMO_IMAGE_NAME
+    ], check=True)
+
+    # Print connection information
+    print(f"Marimo container is running.")
+    print(f"Access the Marimo interface at: http://localhost:{MARIMO_PORT}")
+
 def main():
     parser = argparse.ArgumentParser(description="Docker build script for WebLogic honeypot.")
     # Set default backup directory to a folder with the current date in the local directory
@@ -154,6 +187,9 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"Error starting container: {e.stderr}")
         print("Please check the Docker logs for more details.")
+
+    # Build and run the Marimo container
+    build_and_run_marimo_container()
 
 if __name__ == "__main__":
     main()
