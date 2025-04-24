@@ -14,7 +14,7 @@ DOCKER_BUILD_DIR = "/home/opc/honeypot/docker_folder"
 OPERATING_FOLDER = "/home/opc/honeypot/"
 TARGET_FILE = "app-v1.py"
 CONTAINER_BASE_NAME = "weblogic_honeypot"
-MARIMO_BUILD_DIR = "/home/opc/notebook"
+MARIMO_BUILD_DIR = "/home/opc/honeypot/notebook"
 
 def file_hash(filepath):
     """Return SHA256 hash of file contents."""
